@@ -1,0 +1,4 @@
+date,src,dest,amount,tags,notes
+2019/10/09,my-company-payroll,this,200,,payday
+2019/10/10,this, car-loan,200,,paid off car
+2019/10/11,car-loan,this,100,,oops i overpaid
