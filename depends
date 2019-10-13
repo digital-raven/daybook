@@ -1,8 +1,0 @@
-# devel
-python3-setuptools
-
-# runtime
-pip3 install dateparser
-python3-argcomplete 
-
-# test
