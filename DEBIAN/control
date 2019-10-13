@@ -1,0 +1,11 @@
+Package: daybook
+Version: 0.1.0
+Section: base
+Priority: optional
+Architecture: all
+Build-Depends: dh-python3
+Depends: python3, python3-argcomplete, python3-dateparser
+Maintainer: Bo Cimino <ciminobo@protonmail.com>
+Changed-By: Bo Cimino <ciminobo@protonmail.com>
+Description: daybook
+ A flexible and powerful tool for command-line double-entry bookkeeping.
