@@ -45,26 +45,30 @@ def create_interactive_parser():
     group.add_argument(
         '--start',
         metavar='DATE',
-        help='Only account for transactions that occur after this date.')
+        help='Filter for transactions after this date.')
     group.add_argument(
         '--end',
         metavar='DATE',
-        help='Only account for transactions that occur before this date.')
+        help='Filter for transactions before this date.')
     group.add_argument(
         '--range',
-        help='Provide this with --start to set up a date range.')
-
+        help='Provide this with --start to filter within a date range. Can be'
+            ' human-readable. eg. "1 month", or "2 weeks"')
     group.add_argument(
         '--accounts',
-        help='Filter on transactions involving the specified account.',
+        help='Filter on transactions involving the specified account names.',
+        metavar='NAME',
         nargs='+')
     group.add_argument(
         '--type',
-        help='Only account for accounts of matching type.',
-        choices=Account.types)
+        help='Filter for transactions that involved an account of the'
+            ' matching type.',
+        choices=sorted(Account.types))
     group.add_argument(
         '--tags',
-        help='Only account for transactions / accounts with matching tags.',
+        help='Filter for transactions that involve the matching tags.'
+            ' This also includes account tags.',
+        metavar='TAG',
         nargs='+')
 
     subparsers = parser.add_subparsers(
