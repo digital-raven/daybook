@@ -16,32 +16,32 @@ def clear():
         _ = os.system('clear')
 
 
-def show_accounts(args, ledger):
-    print('accounts')
-    return
-
-
-def show_expenses(args, ledger):
+def do_expenses(args, ledger):
     print('expenses')
     return
 
 
-def show_summary(args, ledger):
+def do_show(args, ledger):
+    print('show')
+    return
+
+
+def do_summary(args, ledger):
     print('summary')
     return
 
 
-def show_transactions(args, ledger):
-    print('transactions')
+def do_load(args, ledger):
+    print('load')
     return
 
 
 # called during interactive mode. each function accepts args, ledger.
 functions = {
-    'accounts': show_accounts,
-    'expenses': show_expenses,
-    'summary': show_summary,
-    'transactions': show_transactions,
+    'expenses': do_expenses,
+    'show': do_show,
+    'summary': do_summary,
+    'load': do_load,
     'clear': lambda x, y: clear(),
     'quit': lambda x, y: sys.exit(0),
 }
