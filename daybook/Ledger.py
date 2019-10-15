@@ -66,13 +66,14 @@ class Account:
 
     Types dictate the behavior of the balance per transaction.
 
-        asset => loss if src, gain if dest.
-        liability => gain if src, loss if dest, and invert balance.
-        income => loss if src, gain if dest, but should be zeroed.
-        expense => loss if src, gain if dest, and invert balance.
+        asset => Accounts that have a positive effect on your net worth.
+        liability => Debts, which have a negative effect on your net worth.
+        income => Track sources of income. eg. your employer.
+        expense => Accounts that track money spent on consumable goods.
+        receivable => Money owed to you.
     """
 
-    types = {'asset', 'liability', 'income', 'expense'}
+    types = {'asset', 'liability', 'income', 'expense', 'receivable'}
 
     def __init__(self, name='', type='asset', tags=None):
 
