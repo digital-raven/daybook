@@ -107,5 +107,6 @@ class TestLedger(unittest.TestCase):
         for e in expected:
             self.assertTrue(e in ledger.transactions[0].tags)
 
+
 if __name__ == '__main__':
     unittest.main()
