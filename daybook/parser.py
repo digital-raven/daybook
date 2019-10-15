@@ -34,8 +34,9 @@ def create_interactive_parser():
     parser = argparse.ArgumentParser(
         prog='',
         usage='[filters] command [args]',
-        description='Daybook interactive mode. Options must be specified'
-            ' before the command.')
+        description=(
+            'Daybook interactive mode. Options must be specified '
+            'before the command.'))
 
     group = parser.add_argument_group(
         'filter options',
@@ -52,8 +53,9 @@ def create_interactive_parser():
         help='Filter for transactions before this date.')
     group.add_argument(
         '--range',
-        help='Provide this with --start to filter within a date range. Can be'
-            ' human-readable. eg. "1 month", or "2 weeks"')
+        help=(
+            'Provide this with --start to filter within a date range. Can be '
+            'human-readable. eg. "1 month", or "2 weeks"'))
     group.add_argument(
         '--names',
         help='Filter for transactions involving the specified account names.',
@@ -61,15 +63,17 @@ def create_interactive_parser():
         nargs='+')
     group.add_argument(
         '--types',
-        help='Filter for transactions that involved an account of the'
-            ' matching type. Valid types are {}'.format(sorted(Account.types)),
+        help=(
+            'Filter for transactions that involved an account of the '
+            'matching type. Valid types are {}'.format(sorted(Account.types))),
         choices=sorted(Account.types),
         metavar='TYPE',
         nargs='+')
     group.add_argument(
         '--tags',
-        help='Filter for transactions that involve the matching tags.'
-            ' This will also include account tags.',
+        help=(
+            'Filter for transactions that involve the matching tags. '
+            'This will also include account tags.'),
         metavar='TAG',
         nargs='+')
 
@@ -82,8 +86,9 @@ def create_interactive_parser():
     # expenses command
     sp = subparsers.add_parser(
         'expenses',
-        help='Generate an expense report. The default behavior is to use'
-            ' the current month.')
+        help=(
+            'Generate an expense report. The default behavior is to use '
+            'the current month.'))
 
     sp.add_argument(
         '-t', '--transactions',
@@ -101,8 +106,9 @@ def create_interactive_parser():
         action='store_true')
     sp.add_argument(
         '-t', '--transactions',
-        help='Print a list of transactions. If --accounts is specified,'
-            ' then this option will group the transactions by their accounts.',
+        help=(
+            'Print a list of transactions. If --accounts is specified, '
+            'then this option will group the transactions by their accounts.'),
         action='store_true')
 
     # summary command
