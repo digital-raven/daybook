@@ -30,19 +30,13 @@ def create_interactive_parser():
         parser: a reference to the parent parser.
     """
 
-    # main parser
-    parser = argparse.ArgumentParser(
-        prog='',
-        usage='[filters] command [args]',
-        description=(
-            'Daybook interactive mode. Options must be specified '
-            'before the command.'))
-
-    group = parser.add_argument_group(
+    # filter parent parser
+    filter_parser = argparse.ArgumentParser(add_help=False)
+    group = filter_parser.add_argument_group(
         'filter options',
         'Use these options to only show results calculated from transactions '
         'that satisfy all specified criteria. Filter options must be '
-        'specified before the command.')
+        'specified after the command.')
     group.add_argument(
         '--start',
         metavar='DATE',
@@ -77,7 +71,9 @@ def create_interactive_parser():
         metavar='TAG',
         nargs='+')
 
-    # subcommands
+    # main parser
+    parser = argparse.ArgumentParser(
+        prog='', description='Daybook interactive mode.')
     subparsers = parser.add_subparsers(
         metavar='command',
         dest='command',
@@ -86,9 +82,11 @@ def create_interactive_parser():
     # expenses command
     sp = subparsers.add_parser(
         'expenses',
+        usage='expenses [options]',
         help=(
             'Generate an expense report. The default behavior is to use '
-            'the current month.'))
+            'the current month.'),
+        parents=[filter_parser])
 
     sp.add_argument(
         '-t', '--transactions',
@@ -98,7 +96,9 @@ def create_interactive_parser():
     # show command
     sp = subparsers.add_parser(
         'show',
-        help='Print more detailed reports about accounts and transactions.')
+        usage='show [options]',
+        help='Print more detailed reports about accounts and transactions.',
+        parents=[filter_parser])
 
     sp.add_argument(
         '-a', '--accounts',
@@ -108,13 +108,16 @@ def create_interactive_parser():
         '-t', '--transactions',
         help=(
             'Print a list of transactions. If --accounts is specified, '
-            'then this option will group the transactions by their accounts.'),
+            'then this option will group the transactions with their '
+            'accounts.'),
         action='store_true')
 
     # summary command
     sp = subparsers.add_parser(
         'summary',
-        help='Summarize assets and outstanding debt.')
+        usage='summary [options]',
+        help='Summarize assets and outstanding debt.',
+        parents=[filter_parser])
 
     sp.add_argument(
         '--all',
