@@ -77,16 +77,16 @@ class Account:
 
     types = {'asset', 'expense', 'income', 'liability', 'receivable'}
 
-    def __init__(self, name='', type='asset', tags=None):
+    def __init__(self, name='', type_='asset', tags=None):
 
-        if type not in Account.types:
-            raise ValueError('type must be in {}'.format(Account.types))
+        if type_ not in Account.types:
+            raise ValueError('type_ must be in {}'.format(Account.types))
 
         if ' ' in name:
             raise ValueError('Account names may not contain spaces.')
 
         self.name = name
-        self.type = type
+        self.type = type_
         self.tags = {x for x in tags if x} if tags else {}
         self.transactions = []
 
@@ -275,7 +275,7 @@ class Ledger:
         Raises:
             FileNotFoundError: The csv wasn't found.
             PermissionError: The csv exists but could not be read.
-            ValueError: 
+            ValueError: A row from the CSV was invalid.
         """
         newtrans = []
 
@@ -319,8 +319,6 @@ class Ledger:
 
             # add transaction to ledger and accounts.
             t = self.addTransaction(t)
-            src.addTransaction(t)
-            dest.addTransaction(t)
 
     def addTransaction(self, t):
         """ Add a transaction from the data in row.
@@ -330,6 +328,9 @@ class Ledger:
             x = self.addTransaction(x)
 
         Because transaction 'x' may alredy exist, and 'x' should be updated.
+
+        This will also attempt to add t to the src and dest accounts found
+        within this ledger.
 
         Args:
             t: Transaction object to attempt to add.
@@ -345,6 +346,8 @@ class Ledger:
         if t not in self._buckets[t.date]:
             self._buckets[t.date][t] = t
             self.transactions.append(t)
+            self.accounts[t.src.name].addTransaction(t)
+            self.accounts[t.dest.name].addTransaction(t)
             return t
         else:
             self._buckets[t.date][t].addTags(t.tags)
