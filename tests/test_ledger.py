@@ -35,6 +35,18 @@ class TestLedger(unittest.TestCase):
         self.assertEqual(t.dest, dest)
         self.assertEqual(t.date, datetime(2019, 10, 8))
 
+    def test_bad_csv(self):
+        """ A csv with a row that cannot suggest an account should error.
+
+        The ledger should also remain unaffected by that csv entirely.
+        """
+        ledger = Ledger()
+        with self.assertRaises(ValueError):
+            ledger.loadCsv('{}/badsrc.csv'.format(resources))
+
+        self.assertEqual(0, len(ledger.accounts))
+        self.assertEqual(0, len(ledger.transactions))
+
     def test_this_substitution(self):
         """Verify behavior for transactions on 'this'.
 

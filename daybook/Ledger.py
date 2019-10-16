@@ -14,7 +14,9 @@ class Transaction:
 
     def __init__(self, date, src, dest, amount, tags=None, notes=''):
         if not type(date) == datetime:
-            date = dateparser.parse(date)
+            date = dateparser.parse(str(date))
+            if not date:
+                raise ValueError('Invalid date.')
 
         if not type(src) == Account or not type(dest) == Account:
             raise ValueError('src and dest need to be of type Account.')
@@ -254,6 +256,9 @@ class Ledger:
 
         Args:
             csvfiles: list of csvfiles to load.
+
+        Raises:
+            See loadCsv.
         """
         for f in csvfiles:
             self.loadCsv(f)
@@ -261,52 +266,89 @@ class Ledger:
     def loadCsv(self, csvfile):
         """ Loads transactions into this ledger from a single csv.
 
+        If the CSV contains an invalid row, then no changes will be
+        committed to the ledger, and ValueError will be raised.
+
         Args:
             csvfile: Path to csv containing transactions.
+
+        Raises:
+            FileNotFoundError: The csv wasn't found.
+            PermissionError: The csv exists but could not be read.
+            ValueError: 
         """
+        newtrans = []
+
         thisname = os.path.splitext(os.path.basename(csvfile))[0]
         with open(csvfile, 'r') as ifs_:
+            line_num = 1
             reader = csv.DictReader(ifs_)
             for row in reader:
-                self.addTransaction(row, thisname)
+                try:
+                    date = row['date']
 
-    def addTransaction(self, row, thisname='uncategorized'):
+                    # will raise ValueError if invalid.
+                    src = self.suggestAccount(row['src'], thisname)
+                    dest = self.suggestAccount(row['dest'], thisname)
+
+                    amount = float(row['amount'])
+                    tags = [x for x in row['tags'].split(':') if x]
+                    notes = row['notes']
+
+                    # will raise ValueError if invalid.
+                    t = Transaction(date, src, dest, amount, tags, notes)
+                except ValueError:
+                    raise ValueError(
+                        'CSV {}: Line {} generated an error.'.format(
+                            csvfile, line_num))
+
+                # store references in this list to prevent ledger from being
+                # modified in case of error within csv.
+                newtrans.append([src, dest, t])
+
+        # commit transactions to ledger. this code cannot raise.
+        for src, dest, t in newtrans:
+
+            # add the accounts.
+            src = self.addAccount(src)
+            dest = self.addAccount(dest)
+
+            # update the account references within transaction
+            t.src = src
+            t.dest = dest
+
+            # add transaction to ledger and accounts.
+            t = self.addTransaction(t)
+            src.addTransaction(t)
+            dest.addTransaction(t)
+
+    def addTransaction(self, t):
         """ Add a transaction from the data in row.
 
+        The appropriate way to use this function is...
+
+            x = self.addTransaction(x)
+
+        Because transaction 'x' may alredy exist, and 'x' should be updated.
+
         Args:
-            row: dict with fields for name, src, dest, amount, tags, notes.
-            thisname: determine what account the transaction should be labeled
-                as in case of 'this'.
+            t: Transaction object to attempt to add.
 
         Returns:
-            Transaction object.
+            A reference to the transaction object within the ledger.
         """
-        date = row['date']
-        src = self.suggestAccount(row['src'], thisname)
-        dest = self.suggestAccount(row['dest'], thisname)
-        amount = float(row['amount'])
-        tags = [x for x in row['tags'].split(':') if x]
-        notes = row['notes']
-
-        src = self.addAccount(src)
-        dest = self.addAccount(dest)
-
-        t = Transaction(date, src, dest, amount, tags, notes)
-
         if t.date not in self._buckets:
-            self._buckets[t.date] = {}
+            self._buckets[t.date] = dict()
 
         # if this transaction already exists, add the tags from this entry
         # and return.
         if t not in self._buckets[t.date]:
             self._buckets[t.date][t] = t
+            self.transactions.append(t)
+            return t
         else:
             self._buckets[t.date][t].addTags(t.tags)
-            return
-
-        self.transactions.append(t)
-        src.addTransaction(t)
-        dest.addTransaction(t)
+            return self._buckets[t.date][t]
 
     def suggestAccount(self, string, thisname='uncategorized'):
         """ Parse a string and create an account reference from it.
@@ -319,6 +361,9 @@ class Ledger:
 
         Returns:
             New Account reference.
+
+        Raises:
+            ValueError: No valid account could be created from string.
         """
 
         l_ = [x for x in string.split(' ') if x]
@@ -331,10 +376,7 @@ class Ledger:
             if suggestion:
                 l_ = [suggestion]
 
-        try:
-            return Account.createFromList(l_)
-        except ValueError:
-            return Account(name='uncategorized')
+        return Account.createFromList(l_)
 
     def addAccount(self, account):
         """ Add an account to this ledger.
