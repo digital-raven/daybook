@@ -18,22 +18,14 @@ def clear():
 
 def do_expenses(args, ledger):
     print('expenses')
-    return
 
 
 def do_show(args, ledger):
     print('show')
-    return
 
 
 def do_summary(args, ledger):
     print('summary')
-    return
-
-
-def do_load(args, ledger):
-    print('load')
-    return
 
 
 # called during interactive mode. each function accepts args, ledger.
@@ -41,7 +33,7 @@ functions = {
     'expenses': do_expenses,
     'show': do_show,
     'summary': do_summary,
-    'load': do_load,
+    'load': lambda x, y: y.load(x.csv),
     'clear': lambda x, y: clear(),
     'quit': lambda x, y: sys.exit(0),
 }
