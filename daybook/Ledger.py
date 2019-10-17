@@ -50,7 +50,7 @@ class Transaction:
         return self.date < other.date
 
     def __hash__(self):
-        return hash('{} {} {} {}'.format(
+        return hash('{}{}{}{}'.format(
             self.date,
             self.src.name,
             self.dest.name,
@@ -87,7 +87,7 @@ class Account:
 
         self.name = name
         self.type = type_
-        self.tags = {x for x in tags if x} if tags else {}
+        self.tags = {x for x in tags if x} if tags else set()
         self.transactions = []
 
     def addTags(self, tags):
@@ -240,9 +240,8 @@ class Ledger:
         self.transactions = []
         self.hints = hints
 
-        # key - date of transaction
-        # hash created from transaction's src.name, dest.name, and amount.
-        self._buckets = {}
+        # Detect redundant transactions.
+        self.unique_transactions = dict()
 
     def sort(self):
         """ Sort the ledger's transactions by date.
@@ -251,17 +250,35 @@ class Ledger:
         for key, val in self.accounts.items():
             val.transactions.sort()
 
+    def addTransactions(self, transactions, func=lambda x: True):
+        """ Add list of transactions
+
+        There will be no reference sharing - all mutable data are copied,
+        and this ledger will create its own unique account references.
+
+        Args:
+            transactions: Transactions to import.
+            func: Function reference that should return True on transactions
+                to import and False on those to be denied.
+
+        Returns:
+            A list containing internal references to the new transactions.
+        """
+        return [self.addTransaction(t) for t in transactions if func(t)]
+
     def load(self, csvfiles):
         """ Load ledger using from multiple CSVs.
 
         Args:
             csvfiles: list of csvfiles to load.
 
+        Returns:
+            A list of internal references to the new transactions.
+
         Raises:
             See loadCsv.
         """
-        for f in csvfiles:
-            self.loadCsv(f)
+        [t for f in csvfiles for t in self.loadCsv(f)]
 
     def loadCsv(self, csvfile):
         """ Loads transactions into this ledger from a single csv.
@@ -271,6 +288,9 @@ class Ledger:
 
         Args:
             csvfile: Path to csv containing transactions.
+
+        Returns:
+            A list containing internal references to the new transactions.
 
         Raises:
             FileNotFoundError: The csv wasn't found.
@@ -302,35 +322,20 @@ class Ledger:
                         'CSV {}: Line {} generated an error.'.format(
                             csvfile, line_num))
 
-                # store references in this list to prevent ledger from being
-                # modified in case of error within csv.
-                newtrans.append([src, dest, t])
+                newtrans.append(t)
 
         # commit transactions to ledger. this code cannot raise.
-        for src, dest, t in newtrans:
-
-            # add the accounts.
-            src = self.addAccount(src)
-            dest = self.addAccount(dest)
-
-            # update the account references within transaction
-            t.src = src
-            t.dest = dest
-
-            # add transaction to ledger and accounts.
-            t = self.addTransaction(t)
+        return self.addTransactions(newtrans)
 
     def addTransaction(self, t):
-        """ Add a transaction from the data in row.
+        """ Add a transaction to the ledger.
 
         The appropriate way to use this function is...
 
             x = self.addTransaction(x)
 
-        Because transaction 'x' may alredy exist, and 'x' should be updated.
-
-        This will also attempt to add t to the src and dest accounts found
-        within this ledger.
+        Because the ledger will insert a shallow-copy of t, but this copy
+        will be updated with internal account references.
 
         Args:
             t: Transaction object to attempt to add.
@@ -338,20 +343,26 @@ class Ledger:
         Returns:
             A reference to the transaction object within the ledger.
         """
-        if t.date not in self._buckets:
-            self._buckets[t.date] = dict()
+        if t not in self.unique_transactions:
 
-        # if this transaction already exists, add the tags from this entry
-        # and return.
-        if t not in self._buckets[t.date]:
-            self._buckets[t.date][t] = t
+            # create our own copy
+            t = Transaction(t.date, t.src, t.dest, t.amount, t.tags, t.notes)
+
+            # add copies of the accounts and update t.
+            t.src = self.addAccount(t.src)
+            t.dest = self.addAccount(t.dest)
+
+            # commit the transaction
             self.transactions.append(t)
-            self.accounts[t.src.name].addTransaction(t)
-            self.accounts[t.dest.name].addTransaction(t)
+            t.src.transactions.append(t)
+            t.dest.transactions.append(t)
+            self.unique_transactions[t] = t
+
             return t
         else:
-            self._buckets[t.date][t].addTags(t.tags)
-            return self._buckets[t.date][t]
+            internal = self.unique_transactions[t]
+            internal.addTags(t.tags)
+            return internal
 
     def suggestAccount(self, string, thisname='uncategorized'):
         """ Parse a string and create an account reference from it.
@@ -391,8 +402,8 @@ class Ledger:
 
             x = ledger.addAccount(x)
 
-        This is because x is reassigned to the reference
-        within the ledger. The transactions are not moved.
+        This is because the ledger creates a new internal reference using
+        the data in x. The transactions are not moved.
 
         Args:
             account: Account to add.
