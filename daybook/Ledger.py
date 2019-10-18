@@ -1,185 +1,15 @@
-""" Ledger, Account, and Transaction classes
+""" Ledger and Hints class.
 """
 
 import configparser
 import csv
 import os
-from datetime import datetime
 
 import dateparser
 
-
-class Transaction:
-
-    def __init__(self, date, src, dest, amount, tags=None, notes=''):
-        if not type(date) == datetime:
-            date = dateparser.parse(str(date))
-            if not date:
-                raise ValueError('Invalid date.')
-
-        if not type(src) == Account or not type(dest) == Account:
-            raise ValueError('src and dest need to be of type Account.')
-
-        if type(amount) not in [float, int]:
-            raise ValueError('Amount must be numeric')
-
-        self.date = date
-        self.src = src
-        self.dest = dest
-        self.amount = amount
-        self.tags = {x for x in tags if x} if tags else set()
-        self.notes = notes
-
-    def addTags(self, tags):
-        tmp = {x for x in tags if x}
-        self.tags.update(tmp)
-
-    def __str__(self):
-        return ','.join([
-            self.date.strftime('%Y-%m-%d %H:%M:%S'),
-            self.src.name,
-            self.dest.name,
-            str(self.amount),
-            ':'.join(self.tags),
-            '"{}"'.format(self.notes)])
-
-    def __lt__(self, other):
-        """ For sorting in date order.
-        """
-        return self.date < other.date
-
-    def __hash__(self):
-        return hash('{}{}{}{}'.format(
-            self.date,
-            self.src.name,
-            self.dest.name,
-            self.amount))
-
-    def __eq__(self, other):
-        return self.date == other.date \
-            and self.src.name == other.src.name \
-            and self.dest.name == other.dest.name \
-            and self.amount == other.amount
-
-
-class Account:
-    """ An account containing transactions.
-
-    Types dictate the behavior of the balance per transaction.
-
-        asset => Accounts that have a positive effect on your net worth.
-        expense => Accounts that track money spent on consumable goods.
-        income => Track sources of income. eg. your employer.
-        liability => Debts, which have a negative effect on your net worth.
-        receivable => Money owed to you.
-    """
-
-    types = {'asset', 'expense', 'income', 'liability', 'receivable'}
-
-    def __init__(self, name='', type_='asset', tags=None):
-
-        if type_ not in Account.types:
-            raise ValueError('type_ must be in {}'.format(Account.types))
-
-        if ' ' in name:
-            raise ValueError('Account names may not contain spaces.')
-
-        self.name = name
-        self.type = type_
-        self.tags = {x for x in tags if x} if tags else set()
-        self.transactions = []
-
-    def addTags(self, tags):
-        tmp = {x for x in tags if x}
-        self.tags.update(tmp)
-
-    def addTransactions(self, transactions):
-        """ Add transactions to this account
-
-        The account will only add transasctions that include this account.
-
-        Args:
-            transactions: List of transactions to add.
-        """
-        t = transactions
-        self.transactions.extend([x for x in t if self in [x.src, x.dest]])
-
-    def addTransaction(self, trans):
-        """ Add a transaction to this account
-        """
-        if self not in [trans.src, trans.dest]:
-            raise ValueError
-
-        self.transactions.append(trans)
-
-    def balance(self, start=None, end=None):
-        """ Return balance of account.
-
-        Args:
-            start: datetime representing earliest transactions to use.
-            end: datetime representing upper boundry.
-
-        Returns:
-            The balance of the account as computed by transactions between
-            start and end.
-        """
-
-        balance = 0
-        for trans in self.transactions:
-            if (not start and not end
-                    or start and end and start <= trans.date <= end
-                    or start and start <= trans.date
-                    or end and trans.date <= end):
-
-                if self is trans.src:
-                    balance = balance - trans.amount
-                if self is trans.dest:
-                    balance = balance + trans.amount
-
-        return balance
-
-    @classmethod
-    def createFromList(cls, l_):
-        """ Parse a list to create a new account.
-
-            This list can match the following format...
-
-                name [type] [tag1[:tag2]]
-
-            If type is provided alongside tags, then type must come first.
-            Tags must be separated by colon
-
-        Args:
-            l_: The list containing Account information.
-
-        Returns:
-            A new Account.
-
-        Raises:
-            ValueError if the len was not in 1, 2, or 3, or if
-            the value read from the 'type' field was invalid.
-        """
-
-        name = ''
-        type = 'asset'
-        tags = []
-
-        if len(l_) == 1:
-            name = l_[0]
-        elif len(l_) == 2:
-            name = l_[0]
-            if l_[1] in Account.types:
-                type = l_[1]
-            else:
-                tags = l_[1].split(':')
-        elif len(l_) == 3:
-            name = l_[0]
-            type = l_[1]
-            tags = [x for x in l_[2].split(':') if x]
-        else:
-            raise ValueError
-
-        return Account(name, type, tags)
+from daybook.Account import Account
+from daybook.Amount import Amount
+from daybook.Transaction import Transaction
 
 
 class Hints:
@@ -302,26 +132,48 @@ class Ledger:
         with open(csvfile, 'r') as ifs_:
             line_num = 1
             reader = csv.DictReader(ifs_)
+
+            # keep track of currency suggestions within this spreadsheet.
+            last_currencies = {}
             for row in reader:
                 try:
-                    date = row['date']
+                    date = dateparser.parse(row['date'])
 
                     # will raise ValueError if invalid.
                     src = self.suggestAccount(row['src'], thisname)
                     dest = self.suggestAccount(row['dest'], thisname)
 
-                    amount = float(row['amount'])
+                    # determine what currencies to use and validate amount
+                    suggested_src = Account.default_currency
+                    suggested_dest = Account.default_currency
+                    if src.name in last_currencies:
+                        suggested_src = last_currencies[src.name]
+                    elif src.name in self.accounts:
+                        suggested_src = self.accounts[src.name].last_currency
+                    if dest.name in last_currencies:
+                        suggested_dest = last_currencies[dest.name]
+                    elif dest.name in self.accounts:
+                        suggested_dest = self.accounts[dest.name].last_currency
+
+                    amount = Amount.createFromStr(
+                        row['amount'], suggested_src, suggested_dest)
+
                     tags = [x for x in row['tags'].split(':') if x]
                     notes = row['notes']
 
                     # will raise ValueError if invalid.
                     t = Transaction(date, src, dest, amount, tags, notes)
-                except ValueError:
+
+                    # update currency suggestions
+                    last_currencies[src.name] = amount.src_currency
+                    last_currencies[dest.name] = amount.dest_currency
+                except ValueError as ve:
                     raise ValueError(
-                        'CSV {}: Line {} generated an error.'.format(
-                            csvfile, line_num))
+                        'CSV {}: Line {}: {}'.format(
+                            csvfile, line_num, ve))
 
                 newtrans.append(t)
+                line_num = line_num + 1
 
         # commit transactions to ledger. this code cannot raise.
         return self.addTransactions(newtrans)
@@ -353,8 +205,8 @@ class Ledger:
 
             # commit the transaction
             self.transactions.append(t)
-            t.src.transactions.append(t)
-            t.dest.transactions.append(t)
+            t.src.addTransaction(t)
+            t.dest.addTransaction(t)
             self.unique_transactions[t] = t
 
             return t

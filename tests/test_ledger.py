@@ -2,7 +2,9 @@ import os
 import unittest
 from datetime import datetime
 
-from daybook.Ledger import Ledger, Account, Transaction
+from daybook.Ledger import Ledger
+from daybook.Account import Account
+from daybook.Transaction import Transaction
 
 
 resources = '{}/resources'.format(os.path.dirname(__file__))
@@ -24,11 +26,11 @@ class TestLedger(unittest.TestCase):
 
         self.assertEqual('my-employer', src.name)
         self.assertEqual('income', src.type)
-        self.assertEqual(-100, src.balance())
+        self.assertEqual(-100, src.balances['dollars'])
 
         self.assertEqual('my-checking', dest.name)
         self.assertEqual('asset', dest.type)
-        self.assertEqual(100, dest.balance())
+        self.assertEqual(100, dest.balances['dollars'])
 
         self.assertTrue('paystub' in t.tags)
         self.assertEqual(t.src, src)
@@ -61,7 +63,7 @@ class TestLedger(unittest.TestCase):
         emp = ledger.accounts['employer-payroll']
         self.assertEqual('employer-payroll', emp.name)
         self.assertEqual('income', emp.type)
-        self.assertEqual(-100, emp.balance())
+        self.assertEqual(-100, emp.balances['dollars'])
 
     def test_multiple_transactions(self):
         """ Multiple transactions from a single csv should zero
@@ -78,7 +80,7 @@ class TestLedger(unittest.TestCase):
             ac = ledger.accounts[a]
             self.assertEqual(a, ac.name)
 
-        s = sum([x.balance() for y, x in ledger.accounts.items()])
+        s = sum([x.balances['dollars'] for y, x in ledger.accounts.items()])
         self.assertEqual(0, s)
 
     def test_multiple_csvs_redundant(self):

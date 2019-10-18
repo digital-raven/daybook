@@ -1,6 +1,13 @@
 import unittest
 
-from daybook.Ledger import Account, Transaction
+import dateparser
+
+from daybook.Account import Account
+from daybook.Amount import Amount
+from daybook.Transaction import Transaction
+
+
+amount = Amount('yen', 10, 'yen', 10)
 
 
 class TestAccount(unittest.TestCase):
@@ -27,13 +34,10 @@ class TestAccount(unittest.TestCase):
         a = Account('name')
         t = []
         for i in range(1, 10):
-            t.append(Transaction('today', a, a, i))
-
+            t.append(Transaction(dateparser.parse('today'), a, a, amount))
+ 
         a.addTransactions(t)
-
-        for type in Account.types:
-            a.type = type
-            self.assertEqual(0, a.balance())
+        self.assertEqual(0, a.balances['yen'])
 
     def test_create_from_list_zero(self):
         """ An account created from list 0 should raise ValueError
@@ -80,9 +84,9 @@ class TestAccount(unittest.TestCase):
         """ Test adding a single transaction to an account.
         """
         a = Account('a')
-        t = Transaction('today', a, a, 10)
+        t = Transaction(dateparser.parse('today'), a, a, amount)
         a.addTransaction(t)
-        self.assertEqual(0, a.balance())
+        self.assertEqual(0, a.balances['yen'])
         self.assertEqual(1, len(a.transactions))
 
     def test_add_transaction_not_me(self):
@@ -90,35 +94,10 @@ class TestAccount(unittest.TestCase):
         """
         a = Account('a')
         b = Account('b')
-        t = Transaction('today', b, b, 10)
+        t = Transaction(dateparser.parse('today'), b, b, amount)
 
         with self.assertRaises(ValueError):
             a.addTransaction(t)
-
-    def test_add_transactions(self):
-        """ Positive test case for addTransactions.
-
-        Accounts should only add the transactions which they are in.
-        """
-        a = Account('a')
-        b = Account('b')
-
-        t = []
-        for i in range(1, 10):
-            t.append(Transaction('today', a, a, i))
-        for i in range(1, 10):
-            t.append(Transaction('today', b, b, i))
-
-        a.addTransactions(t)
-        b.addTransactions(t)
-
-        ta = a.transactions
-        tb = b.transactions
-
-        self.assertEqual(9, len(a.transactions))
-        self.assertEqual(9, len(b.transactions))
-        self.assertTrue(not [x for x in ta if b in [x.src, x.dest]])
-        self.assertTrue(not [x for x in tb if a in [x.src, x.dest]])
 
     def test_balance_between_asset_accounts(self):
         """ Asset accounts should transfer money to each other and zero.
@@ -126,16 +105,14 @@ class TestAccount(unittest.TestCase):
         a = Account('a')
         b = Account('b')
         t = []
-        x = 0
         for i in range(1, 10):
-            t.append(Transaction('today', a, b, i))
-            x = x + i
+            t.append(Transaction(dateparser.parse('today'), a, b, amount))
 
         a.addTransactions(t)
         b.addTransactions(t)
 
-        self.assertEqual(-x, a.balance())
-        self.assertEqual(x, b.balance())
+        self.assertEqual(-90, a.balances['yen'])
+        self.assertEqual(90, b.balances['yen'])
 
     def test_balance_liability_payoff(self):
         """ Verify asset account's ability to pay off debt
@@ -145,17 +122,17 @@ class TestAccount(unittest.TestCase):
         void = Account('void', 'asset')
 
         # create debt, add wealth, pay it off
-        t1 = Transaction('today', liab, void, 100)
-        t2 = Transaction('today', void, a, 100)
-        t3 = Transaction('today', a, liab, 100)
-
-        a.addTransactions([t1, t2, t3])
-        liab.addTransactions([t1, t2, t3])
-        void.addTransactions([t1, t2, t3])
-
-        self.assertEqual(0, void.balance())
-        self.assertEqual(0, a.balance())
-        self.assertEqual(0, liab.balance())
+        t1 = Transaction(dateparser.parse('today'), liab, void, amount)
+        t2 = Transaction(dateparser.parse('today'), void, a, amount)
+        t3 = Transaction(dateparser.parse('today'), a, liab, amount)
+    
+        a.addTransactions([t2, t3])
+        liab.addTransactions([t1, t3])
+        void.addTransactions([t1, t2])
+    
+        self.assertEqual(0, void.balances['yen'])
+        self.assertEqual(0, a.balances['yen'])
+        self.assertEqual(0, liab.balances['yen'])
 
     def test_balance_rounding(self):
         """ Very small numbers should not fail balance tests.
@@ -163,17 +140,21 @@ class TestAccount(unittest.TestCase):
         a = Account('a')
         b = Account('b')
 
+        x = Amount('yen', 3.33, 'yen', 3.33)
+        y = Amount('yen', 4.32, 'yen', 4.32)
+        z = Amount('yen', 0.99, 'yen', 0.99)
+
         t = []
-        t.append(Transaction('today', a, b, 3.33))
-        t.append(Transaction('today', b, a, 4.32))
-        t.append(Transaction('today', a, b, 0.99))
+        t.append(Transaction(dateparser.parse('today'), a, b, x))
+        t.append(Transaction(dateparser.parse('today'), b, a, y))
+        t.append(Transaction(dateparser.parse('today'), a, b, z))
 
         a.addTransactions(t)
         b.addTransactions(t)
 
-        x = sum([x.balance() for x in [a, b]])
+        s = sum([s.balances['yen'] for s in [a, b]])
 
-        self.assertEqual(0, x)
+        self.assertEqual(0, s)
 
         # verify this sum would otherwise be non-zero
         self.assertFalse(3.33 - 4.32 + 0.99 == 0)
