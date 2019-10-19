@@ -7,6 +7,7 @@ from datetime import datetime
 from daybook.Account import Account
 from daybook.Amount import Amount
 
+
 class Transaction:
 
     def __init__(self, date, src, dest, amount, tags=None, notes=''):
