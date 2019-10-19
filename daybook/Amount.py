@@ -3,6 +3,7 @@
 
 import shlex
 
+
 def exception_counter(l_, func):
     """ Returns how many elements of l_ raised in func.
     """
@@ -13,6 +14,7 @@ def exception_counter(l_, func):
         except Exception as e:
             i = i + 1
     return i
+
 
 class Amount:
     def __init__(self, src_currency, src_amount, dest_currency, dest_amount):

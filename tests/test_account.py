@@ -35,7 +35,7 @@ class TestAccount(unittest.TestCase):
         t = []
         for i in range(1, 10):
             t.append(Transaction(dateparser.parse('today'), a, a, amount))
- 
+
         a.addTransactions(t)
         self.assertEqual(0, a.balances['yen'])
 
@@ -125,11 +125,11 @@ class TestAccount(unittest.TestCase):
         t1 = Transaction(dateparser.parse('today'), liab, void, amount)
         t2 = Transaction(dateparser.parse('today'), void, a, amount)
         t3 = Transaction(dateparser.parse('today'), a, liab, amount)
-    
+
         a.addTransactions([t2, t3])
         liab.addTransactions([t1, t3])
         void.addTransactions([t1, t2])
-    
+
         self.assertEqual(0, void.balances['yen'])
         self.assertEqual(0, a.balances['yen'])
         self.assertEqual(0, liab.balances['yen'])

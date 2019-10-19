@@ -3,6 +3,7 @@
 
 from collections import defaultdict
 
+
 class Account:
     """ An account containing transactions.
 
