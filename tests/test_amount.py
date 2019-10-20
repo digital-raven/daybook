@@ -188,10 +188,12 @@ class TestAmount(unittest.TestCase):
         """ Verify acceptance of fully-specified exchange.
         """
         a = Amount.createFromStr('dollar:10 peso:20', 'yen', 'yomamma')
+        b = Amount.createFromStr('dollar 10 peso 20', 'yen', 'yomamma')
         self.assertEqual('dollar', a.src_currency)
         self.assertEqual('peso', a.dest_currency)
         self.assertEqual(10, a.src_amount)
         self.assertEqual(20, a.dest_amount)
+        self.assertEqual(a, b)
 
     def test_full_conversion_2(self):
         """ Verify acceptance of fully-specified exchange.

@@ -35,6 +35,21 @@ class Transaction:
             self.dest.name,
             self.amount))
 
+    def __str__(self):
+        """ Return transaction as a complete csv row.
+        """
+        return '"{}","{} {} {}","{} {} {}","{}","{}","{}"'.format(
+            self.date,
+            self.src.name,
+            self.src.type,
+            ':'.join(self.src.tags),
+            self.dest.name,
+            self.dest.type,
+            ':'.join(self.dest.tags),
+            self.amount,
+            ':'.join(self.tags),
+            self.notes)
+
     def __lt__(self, other):
         return self.date < other.date
 
