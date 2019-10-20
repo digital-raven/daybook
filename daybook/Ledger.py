@@ -79,6 +79,12 @@ class Ledger:
         for key, val in self.accounts.items():
             val.transactions.sort()
 
+    def dump(self):
+        s = 'date,src,dest,amount,tags,notes\n'
+        for t in self.transactions:
+            s = s + str(t) + '\n'
+        return s
+
     def addTransactions(self, transactions, func=lambda x: True):
         """ Add list of transactions
 
