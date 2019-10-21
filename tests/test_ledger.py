@@ -98,7 +98,7 @@ class TestLedger(unittest.TestCase):
         ]
 
         ledger = Ledger()
-        ledger.load(csvs)
+        ledger.loadCsvs(csvs)
 
         self.assertEqual(4, len(ledger.accounts))
         self.assertEqual(5, len(ledger.transactions))
@@ -113,7 +113,7 @@ class TestLedger(unittest.TestCase):
         ]
 
         ledger = Ledger()
-        ledger.load(csvs)
+        ledger.loadCsvs(csvs)
 
         expected = ['payment', 'tags', 'i', 'got', 'paid']
 

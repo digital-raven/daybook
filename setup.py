@@ -30,7 +30,8 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'daybook=daybook.main:main'
+            'daybook=daybook.client:main',
+            'daybookd=daybook.server:main',
         ]
     },
 )
