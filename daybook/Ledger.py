@@ -3,6 +3,7 @@
 
 import configparser
 import csv
+import io
 import os
 
 import dateparser
@@ -72,6 +73,14 @@ class Ledger:
         # Detect redundant transactions.
         self.unique_transactions = dict()
 
+    def clear(self):
+        """ Clear the ledger and start from scratch.
+        """
+        self.accounts = {}
+        self.transactions = []
+        self.hints = Hints('')
+        self.unique_transactions = dict()
+
     def sort(self):
         """ Sort the ledger's transactions by date.
         """
@@ -79,33 +88,40 @@ class Ledger:
         for key, val in self.accounts.items():
             val.transactions.sort()
 
-    def dump(self):
+    def dump(self, func=lambda x: True):
+        """ Dump contents of ledger as csv string.
+
+        This function can filter for Transactions.
+
+        Args:
+            func: Function that returns True or False when
+                provided with a Transaction.
+
+        Returns:
+            The leddger's content's as a CSV string.
+        """
         s = 'date,src,dest,amount,tags,notes\n'
-        for t in self.transactions:
+        for t in self.getTransactions(func):
             s = s + str(t) + '\n'
         return s
 
-    def addTransactions(self, transactions, func=lambda x: True):
-        """ Add list of transactions
-
-        There will be no reference sharing - all mutable data are copied,
-        and this ledger will create its own unique account references.
+    def getTransactions(self, func=lambda x: True):
+        """ Retrieve a list of filtered transactions.
 
         Args:
-            transactions: Transactions to import.
-            func: Function reference that should return True on transactions
-                to import and False on those to be denied.
+            func: Function that returns True or False when provided
+                with a Transaction.
 
         Returns:
-            A list containing internal references to the new transactions.
+            List of internal transaction references.
         """
-        return [self.addTransaction(t) for t in transactions if func(t)]
+        return [t for t in self.transactions if func(t)]
 
-    def load(self, csvfiles):
-        """ Load ledger using from multiple CSVs.
+    def loadCsvs(self, csvfiles):
+        """ Load ledger from multiple CSVs.
 
         Args:
-            csvfiles: list of csvfiles to load.
+            csvfiles: list of csv filename to load from.
 
         Returns:
             A list of internal references to the new transactions.
@@ -113,16 +129,25 @@ class Ledger:
         Raises:
             See loadCsv.
         """
-        [t for f in csvfiles for t in self.loadCsv(f)]
+        return [t for f in csvfiles for t in self.loadCsv(f)]
 
     def loadCsv(self, csvfile):
-        """ Loads transactions into this ledger from a single csv.
+        thisname = os.path.splitext(os.path.basename(csvfile))[0]
+        with open(csvfile, 'r') as f:
+            try:
+                return self.load(f, thisname)
+            except ValueError as ve:
+                raise ValueError('CSV {}: {}'.format(csvfile, ve))
 
-        If the CSV contains an invalid row, then no changes will be
-        committed to the ledger, and ValueError will be raised.
+    def load(self, lines, thisname='this'):
+        """ Loads transactions into this ledger from csv-lines.
+
+        No transactions will be committed to the ledger if any line
+        contains an invalid entry.
 
         Args:
-            csvfile: Path to csv containing transactions.
+            lines: List of lines to be added. The first line must be the
+                headings 'date,src,dest,amount,tags,notes'.
 
         Returns:
             A list containing internal references to the new transactions.
@@ -132,57 +157,69 @@ class Ledger:
             PermissionError: The csv exists but could not be read.
             ValueError: A row from the CSV was invalid.
         """
+        if type(lines) == str:
+            lines = io.StringIO(lines)
+
         newtrans = []
+        reader = csv.DictReader(lines)
 
-        thisname = os.path.splitext(os.path.basename(csvfile))[0]
-        with open(csvfile, 'r') as ifs_:
-            line_num = 1
-            reader = csv.DictReader(ifs_)
+        # keep track of currency suggestions within this spreadsheet.
+        last_currencies = {}
+        line_num = 1
+        for row in reader:
+            try:
+                date = dateparser.parse(row['date'])
 
-            # keep track of currency suggestions within this spreadsheet.
-            last_currencies = {}
-            for row in reader:
-                try:
-                    date = dateparser.parse(row['date'])
+                # will raise ValueError if invalid.
+                src = self.suggestAccount(row['src'], thisname)
+                dest = self.suggestAccount(row['dest'], thisname)
 
-                    # will raise ValueError if invalid.
-                    src = self.suggestAccount(row['src'], thisname)
-                    dest = self.suggestAccount(row['dest'], thisname)
+                # determine what currencies to use and validate amount
+                suggested_src = Account.default_currency
+                suggested_dest = Account.default_currency
+                if src.name in last_currencies:
+                    suggested_src = last_currencies[src.name]
+                elif src.name in self.accounts:
+                    suggested_src = self.accounts[src.name].last_currency
+                if dest.name in last_currencies:
+                    suggested_dest = last_currencies[dest.name]
+                elif dest.name in self.accounts:
+                    suggested_dest = self.accounts[dest.name].last_currency
 
-                    # determine what currencies to use and validate amount
-                    suggested_src = Account.default_currency
-                    suggested_dest = Account.default_currency
-                    if src.name in last_currencies:
-                        suggested_src = last_currencies[src.name]
-                    elif src.name in self.accounts:
-                        suggested_src = self.accounts[src.name].last_currency
-                    if dest.name in last_currencies:
-                        suggested_dest = last_currencies[dest.name]
-                    elif dest.name in self.accounts:
-                        suggested_dest = self.accounts[dest.name].last_currency
+                amount = Amount.createFromStr(
+                    row['amount'], suggested_src, suggested_dest)
 
-                    amount = Amount.createFromStr(
-                        row['amount'], suggested_src, suggested_dest)
+                tags = [x for x in row['tags'].split(':') if x]
+                notes = row['notes']
 
-                    tags = [x for x in row['tags'].split(':') if x]
-                    notes = row['notes']
+                # will raise ValueError if invalid.
+                t = Transaction(date, src, dest, amount, tags, notes)
 
-                    # will raise ValueError if invalid.
-                    t = Transaction(date, src, dest, amount, tags, notes)
+                # update currency suggestions
+                last_currencies[src.name] = amount.src_currency
+                last_currencies[dest.name] = amount.dest_currency
+            except ValueError as ve:
+                raise ValueError('Line {}: {}'.format(line_num, ve))
 
-                    # update currency suggestions
-                    last_currencies[src.name] = amount.src_currency
-                    last_currencies[dest.name] = amount.dest_currency
-                except ValueError as ve:
-                    raise ValueError(
-                        'CSV {}: Line {}: {}'.format(
-                            csvfile, line_num, ve))
-
-                newtrans.append(t)
-                line_num = line_num + 1
+            newtrans.append(t)
+            line_num = line_num + 1
 
         # commit transactions to ledger. this code cannot raise.
         return self.addTransactions(newtrans)
+
+    def addTransactions(self, transactions):
+        """ Add list of transactions
+
+        There will be no reference sharing - all mutable data are copied,
+        and this ledger will create its own unique account references.
+
+        Args:
+            transactions: Transactions to import.
+
+        Returns:
+            A list containing internal references to the new transactions.
+        """
+        return [self.addTransaction(t) for t in transactions]
 
     def addTransaction(self, t):
         """ Add a transaction to the ledger.
