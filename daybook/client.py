@@ -63,15 +63,17 @@ def get_csv_paths(rootdir):
 def do_load(server, args):
     """ Load a local ledger with CSVs and dump to daybookd.
     """
-    ledger = Ledger()
-
     # find all csvs in ledger_root if no csvs provided.
     csvs = args.csv if args.csv else get_csv_paths(args.ledger_root)
+    hintsfile = '{}/hints.ini'.format(args.ledger_root)
+    if not os.path.exists(hintsfile):
+        hintsfile = ''
 
     if not csvs:
         print('No CSVs found in {}.'.format(args.ledger_root))
         return
 
+    ledger = Ledger(args.primary_currency, hintsini=hintsfile)
     ledger.loadCsvs(csvs)
     server.load(args.username, args.password, ledger.dump())
 
@@ -129,6 +131,10 @@ def main():
         print(
             'ERROR: No ledger_root specified on '
             'command-line or in {}'.format(args.config))
+        sys.exit(1)
+
+    if not args.primary_currency:
+        print('ERROR: No primary_currency in {}'.format(args.config))
         sys.exit(1)
 
     url = 'http://{}:{}'.format(args.hostname, args.port)

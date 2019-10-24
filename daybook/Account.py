@@ -26,9 +26,17 @@ class Account:
         'receivable',
     }
 
-    default_currency = 'dollars'
-
     def __init__(self, name='', type_='asset', tags=None):
+        """ Initialize a new account instance.
+
+        Mutable references are copied.
+
+        Args:
+            name: Name of the account. Must contain no spaces.
+            type: Type of account. Must be in Account.types.
+            tags: Container of tags for account. The account will 
+                create a unique set internally.
+        """
 
         if type_ not in Account.types:
             raise ValueError('Account type must be in {}.'.format(
@@ -48,7 +56,7 @@ class Account:
         self.balances = defaultdict(lambda: 0)
 
         # most recent currency used in a transaction
-        self.last_currency = Account.default_currency.strip()
+        self.last_currency = None
 
     def addTags(self, tags):
         tmp = {x for x in tags if x}
@@ -123,6 +131,8 @@ class Account:
             type_ = l_[1]
             tags = [x for x in l_[2].split(':') if x]
         else:
-            raise ValueError
+            raise ValueError(
+                'Accounts must be created with 1, 2, or 3 '
+                'space-separated fields.')
 
         return Account(name, type_, tags)

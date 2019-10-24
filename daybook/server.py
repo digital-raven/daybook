@@ -21,7 +21,9 @@ class Login:
         self.password = password
 
 
-ledger = Ledger()
+# This ledger never reads from csvs - so we dont care about
+# its primary currency.
+ledger = Ledger(currency='dont-care')
 login = Login('', '')
 
 

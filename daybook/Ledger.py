@@ -62,10 +62,11 @@ class Hints:
 
 class Ledger:
 
-    def __init__(self, hints=None, hintsini=''):
+    def __init__(self, primary_currency, hints=None, hintsini=''):
         if not hints:
             hints = Hints(hintsini)
 
+        self.primary_currency = primary_currency
         self.accounts = {}
         self.transactions = []
         self.hints = hints
@@ -175,16 +176,21 @@ class Ledger:
                 dest = self.suggestAccount(row['dest'], thisname)
 
                 # determine what currencies to use and validate amount
-                suggested_src = Account.default_currency
-                suggested_dest = Account.default_currency
+                suggested_src = ''
+                suggested_dest = ''
                 if src.name in last_currencies:
                     suggested_src = last_currencies[src.name]
                 elif src.name in self.accounts:
                     suggested_src = self.accounts[src.name].last_currency
+                else:
+                    suggested_src = self.primary_currency
+
                 if dest.name in last_currencies:
                     suggested_dest = last_currencies[dest.name]
                 elif dest.name in self.accounts:
                     suggested_dest = self.accounts[dest.name].last_currency
+                else:
+                    suggested_dest = self.primary_currency
 
                 amount = Amount.createFromStr(
                     row['amount'], suggested_src, suggested_dest)
