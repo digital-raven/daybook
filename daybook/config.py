@@ -22,6 +22,7 @@ def do_first_time_setup():
     # use these vals to create user config if not present in system defaults.
     default_vals = {}
     default_vals['ledger_root'] = '{}/.local/share/daybook'.format(Path.home())
+    default_vals['primary_currency'] = 'dollars'
     default_vals['hostname'] = 'localhost'
     default_vals['port'] = random.randint(5000, 15000)
     default_vals['username'] = ''.join(
