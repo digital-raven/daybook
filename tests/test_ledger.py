@@ -7,6 +7,7 @@ from daybook.Account import Account
 from daybook.Transaction import Transaction
 
 
+pcurr = 'dollars'
 resources = '{}/resources'.format(os.path.dirname(__file__))
 
 
@@ -15,7 +16,7 @@ class TestLedger(unittest.TestCase):
     def test_single_transaction(self):
         """ Verify correct behavior for single csv.
         """
-        ledger = Ledger(hintsini='{}/hints.ini'.format(resources))
+        ledger = Ledger(pcurr, hintsini='{}/hints.ini'.format(resources))
         ledger.loadCsv('{}/single.csv'.format(resources))
 
         src = ledger.accounts['my-employer']
@@ -42,7 +43,7 @@ class TestLedger(unittest.TestCase):
 
         The ledger should also remain unaffected by that csv entirely.
         """
-        ledger = Ledger()
+        ledger = Ledger(pcurr)
         with self.assertRaises(ValueError):
             ledger.loadCsv('{}/badsrc.csv'.format(resources))
 
@@ -55,7 +56,7 @@ class TestLedger(unittest.TestCase):
         Transactions that contain 'this' as the account name should
         substitute the basename of the csv.
         """
-        ledger = Ledger(hintsini='{}/hints.ini'.format(resources))
+        ledger = Ledger(pcurr, hintsini='{}/hints.ini'.format(resources))
         ledger.loadCsv('{}/employer-payroll.csv'.format(resources))
 
         self.assertTrue('employer-payroll' in ledger.accounts)
@@ -69,7 +70,7 @@ class TestLedger(unittest.TestCase):
         """ Multiple transactions from a single csv should zero
         """
 
-        ledger = Ledger(hintsini='{}/hints.ini'.format(resources))
+        ledger = Ledger(pcurr, hintsini='{}/hints.ini'.format(resources))
         ledger.loadCsv('{}/loan-payoff.csv'.format(resources))
 
         self.assertEqual(4, len(ledger.accounts))
@@ -97,7 +98,7 @@ class TestLedger(unittest.TestCase):
             '{}/my-company-payroll.csv'.format(path),
         ]
 
-        ledger = Ledger()
+        ledger = Ledger(pcurr)
         ledger.loadCsvs(csvs)
 
         self.assertEqual(4, len(ledger.accounts))
@@ -112,7 +113,7 @@ class TestLedger(unittest.TestCase):
             '{}/employer-payroll.csv'.format(path),
         ]
 
-        ledger = Ledger()
+        ledger = Ledger(pcurr)
         ledger.loadCsvs(csvs)
 
         expected = ['payment', 'tags', 'i', 'got', 'paid']

@@ -98,6 +98,10 @@ def create_main_parser():
         '--ledger-root',
         metavar='DIR',
         help='Custom directory to load CSVs from.')
+    parser.add_argument(
+        '--primary-currency',
+        metavar='CURRENCY',
+        help='Override primary_currency in config.')
 
     # begin subparsers
     subparsers = parser.add_subparsers(
