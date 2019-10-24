@@ -23,7 +23,7 @@ class Login:
 
 # This ledger never reads from csvs - so we dont care about
 # its primary currency.
-ledger = Ledger(currency='dont-care')
+ledger = Ledger(primary_currency='dont-care')
 login = Login('', '')
 
 
