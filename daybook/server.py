@@ -10,6 +10,8 @@ import sys
 from collections import namedtuple
 from xmlrpc.server import SimpleXMLRPCServer
 
+import argcomplete
+
 import daybook.parser
 from daybook.Ledger import Ledger
 from daybook.config import add_config_args, user_conf
@@ -124,6 +126,7 @@ def ping():
 def main():
 
     parser = daybook.parser.create_server_parser()
+    argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
     if not os.path.exists(user_conf) and not args.config:

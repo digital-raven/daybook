@@ -5,6 +5,7 @@ import os
 import sys
 import xmlrpc.client
 
+import argcomplete
 import dateparser
 
 import daybook.parser
@@ -118,6 +119,7 @@ functions = {
 
 def main():
     parser = daybook.parser.create_main_parser()
+    argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
     if not os.path.exists(user_conf) and not args.config:
