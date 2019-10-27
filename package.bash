@@ -11,6 +11,7 @@ then
     python3 setup.py bdist_wheel
 elif [ "$1" == "deb" ]
 then
+    export DEBBUILD=1
     pybuild --build
     pybuild --install
     mkdir $pkgname
