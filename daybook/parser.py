@@ -88,7 +88,10 @@ def create_main_parser():
     server_opts = create_server_opts()
 
     parser = argparse.ArgumentParser(
-        prog='daybook', description='Command-line accounting.',
+        prog='daybook',
+        description=(
+            'Command-line accounting. Run "daybook" with no arguments '
+            'to perform first-time setup.'),
         parents=[server_opts])
 
     parser.add_argument(

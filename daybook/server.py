@@ -130,7 +130,7 @@ def main():
     args = parser.parse_args()
 
     if not os.path.exists(user_conf) and not args.config:
-        print('No user config found; run "daybook init" first.')
+        print('No user config found; run "daybook" first.')
         sys.exit(1)
 
     if not args.config:
