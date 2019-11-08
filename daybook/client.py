@@ -24,7 +24,6 @@ def get_dump(server, args):
     Returns:
         Dump from server as string of CSVs.
     """
-
     # figure out generic date parsing.
     today = dateparser.parse('today')
     args.start = dateparser.parse(args.start) if args.start else None
@@ -48,11 +47,14 @@ def get_dump(server, args):
     username = args.username
     password = args.password
     accounts = ' '.join(args.accounts) if args.accounts else None
+    currencies = ' '.join(args.currencies) if args.currencies else None
     types = ' '.join(args.types) if args.types else None
     tags = ':'.join(args.tags) if args.tags else None
 
     return server.dump(
-        username, password, args.start, args.end, accounts, types, tags)
+        username, password,
+        args.start, args.end,
+        accounts, currencies, types, tags)
 
 
 def do_clear(server, args):

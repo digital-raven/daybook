@@ -32,6 +32,11 @@ def create_filter_opts():
         metavar='NAME',
         nargs='+')
     group.add_argument(
+        '--currencies',
+        help='Filter for transactions involving certain currencies.',
+        metavar='CURRENCY',
+        nargs='+')
+    group.add_argument(
         '--types',
         help=(
             'Filter for transactions that involved an account of the '
