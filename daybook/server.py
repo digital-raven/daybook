@@ -31,7 +31,7 @@ login = Login('', '')
 
 # helper funcs for filter_transactions
 def get_all_tags(t):
-    return x.tags.union(x.src.tags.union(x.dest.tags))
+    return t.tags.union(t.src.tags.union(t.dest.tags))
 
 
 def in_start(start, t):
@@ -46,6 +46,11 @@ def in_accounts(accounts, t):
     return not accounts or t.src in accounts or t.dest in accounts
 
 
+def in_currencies(currencies, t):
+    expected = [t.amount.src_currency, t.amount.dest_currency]
+    return not currencies or len([c for c in currencies if c in expected]) > 0
+
+
 def in_types(types, t):
     return not types or t.src.type in types or t.dest.type in types
 
@@ -54,7 +59,7 @@ def in_tags(tags, t):
     return not tags or len(tags.intersect(get_all_tags(t))) > 0
 
 
-def filter_transaction(t, start, end, accounts, types, tags):
+def filter_transaction(t, start, end, accounts, currencies, types, tags):
     """ Return True if transaction matches the criterion.
 
     Arguments that are None are treated as dont-cares.
@@ -71,6 +76,7 @@ def filter_transaction(t, start, end, accounts, types, tags):
         in_start(start, t)
         and in_end(end, t)
         and in_accounts(accounts, t)
+        and in_currencies(currencies, t)
         and in_types(types, t)
         and in_tags(tags, t))
 
@@ -83,7 +89,7 @@ def clear(username, password):
     return 0
 
 
-def dump(username, password, start, end, accounts, types, tags):
+def dump(username, password, start, end, accounts, currencies, types, tags):
     """ Return filtered transactions.
 
     Arguments that are None are treated as dont-cares.
@@ -104,11 +110,12 @@ def dump(username, password, start, end, accounts, types, tags):
         return 1
 
     accounts = set(accounts.split()) if accounts else None
+    currencies = list(currencies.split()) if currencies else None
     types = set(types.split()) if types else None
     tags = set(tags.split(':')) if tags else None
 
     return ledger.dump(lambda x: filter_transaction(
-        x, start, end, accounts, types, tags))
+        x, start, end, accounts, currencies, types, tags))
 
 
 def load(username, password, lines):
