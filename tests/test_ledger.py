@@ -38,6 +38,25 @@ class TestLedger(unittest.TestCase):
         self.assertEqual(t.dest, dest)
         self.assertEqual(t.date, datetime(2019, 10, 8))
 
+    def test_hints_match(self):
+        """ Verify that account names can be inferred from hints.
+        """
+        ledger = Ledger(pcurr, hintsini='{}/hints.ini'.format(resources))
+        ledger.loadCsv('{}/single-hints/my-checking.csv'.format(resources))
+
+        self.assertTrue('void' in ledger.accounts)
+        self.assertTrue('my-checking' in ledger.accounts)
+        self.assertTrue('grocery' in ledger.accounts)
+
+        src = ledger.accounts['my-checking']
+        dest = ledger.accounts['grocery']
+
+        self.assertEqual(src.balances['dollars'], -45.77)
+        self.assertEqual(dest.balances['dollars'], 45.77)
+
+        self.assertEqual(src.type, 'asset')
+        self.assertEqual(dest.type, 'expense')
+
     def test_bad_csv(self):
         """ A csv with a row that cannot suggest an account should error.
 
