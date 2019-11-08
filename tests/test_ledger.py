@@ -51,11 +51,11 @@ class TestLedger(unittest.TestCase):
         src = ledger.accounts['my-checking']
         dest = ledger.accounts['grocery']
 
-        self.assertEqual(src.balances['dollars'], -45.77)
-        self.assertEqual(dest.balances['dollars'], 45.77)
+        self.assertEqual(-45.77, src.balances['dollars'])
+        self.assertEqual(45.77, dest.balances['dollars'])
 
-        self.assertEqual(src.type, 'asset')
-        self.assertEqual(dest.type, 'expense')
+        self.assertEqual('asset', src.type)
+        self.assertEqual('expense', dest.type)
 
     def test_bad_csv(self):
         """ A csv with a row that cannot suggest an account should error.
@@ -86,7 +86,7 @@ class TestLedger(unittest.TestCase):
         self.assertEqual(-100, emp.balances['dollars'])
 
     def test_multiple_transactions(self):
-        """ Multiple transactions from a single csv should zero
+        """ Multiple transactions from a single csv should zero.
         """
 
         ledger = Ledger(pcurr, hintsini='{}/hints.ini'.format(resources))
@@ -121,7 +121,13 @@ class TestLedger(unittest.TestCase):
         ledger.loadCsvs(csvs)
 
         self.assertEqual(4, len(ledger.accounts))
-        self.assertEqual(5, len(ledger.transactions))
+        self.assertEqual(4, len(ledger.transactions))
+
+        self.assertEqual(0, ledger.accounts['car-loan'].balances['dollars'])
+        self.assertEqual(
+            100, ledger.accounts['my-checking'].balances['dollars'])
+        self.assertEqual(
+            -200, ledger.accounts['my-company-payroll'].balances['dollars'])
 
     def test_multiple_csvs_tags(self):
         """ Tags from duplicate transactions should sum.
@@ -140,6 +146,24 @@ class TestLedger(unittest.TestCase):
         self.assertEqual(len(expected), len(ledger.transactions[0].tags))
         for e in expected:
             self.assertTrue(e in ledger.transactions[0].tags)
+
+    def test_transaction_from_dump(self):
+        """ Verify a ledger's dump can populate another ledger.
+        """
+        path = '{}/multi-csv'.format(resources)
+        csvs = [
+            '{}/car-loan.csv'.format(path),
+            '{}/my-checking.csv'.format(path),
+            '{}/my-company-payroll.csv'.format(path),
+        ]
+
+        ledger1 = Ledger(pcurr)
+        ledger1.loadCsvs(csvs)
+
+        ledger2 = Ledger(pcurr)
+        ledger2.load(ledger1.dump())
+
+        self.assertEqual(ledger1.dump(), ledger2.dump())
 
 
 if __name__ == '__main__':

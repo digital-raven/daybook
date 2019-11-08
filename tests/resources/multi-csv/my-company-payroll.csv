@@ -1,3 +1,2 @@
 date,src,dest,amount,tags,notes
-2019/10/09,void,this income,200,,payday
-2019/10/09,this,my-checking,200,payment:tags,payday
+2019/10/09,this income,my-checking,200,payment:tags,payday
