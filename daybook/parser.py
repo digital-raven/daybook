@@ -43,6 +43,7 @@ def create_filter_opts():
             'matching type. Valid types are {}'.format(sorted(Account.types))),
         choices=sorted(Account.types),
         metavar='TYPE',
+        default=list(),
         nargs='+')
     group.add_argument(
         '--tags',
@@ -124,18 +125,13 @@ def create_main_parser():
         help='Dump transactions to stdout as a raw csv.',
         parents=[filter_opts])
 
-    # expenses command
+    # expense command
     sp = subparsers.add_parser(
-        'expenses',
+        'expense',
         help=(
             'Generate an expense report. The default behavior is to use '
             'the current month.'),
         parents=[filter_opts])
-
-    sp.add_argument(
-        '-t', '--transactions',
-        help='Print the transactions for each account.',
-        action='store_true')
 
     # load command
     sp = subparsers.add_parser(
@@ -171,27 +167,5 @@ def create_main_parser():
         '--hints',
         metavar='HINTSFILE',
         help='Specify a custom hints.ini.')
-
-    # show command
-    sp = subparsers.add_parser(
-        'show',
-        help='Print more detailed reports about accounts and transactions.',
-        parents=[filter_opts])
-
-    sp.add_argument(
-        '--report-on',
-        help='Display an account-focused or transaction-focused report.',
-        choices={'accounts', 'transactions'})
-
-    # summary command
-    sp = subparsers.add_parser(
-        'summary',
-        help='Summarize assets and outstanding debt.',
-        parents=[filter_opts])
-
-    sp.add_argument(
-        '--all',
-        help='Include closed accounts in the report.',
-        action='store_true')
 
     return parser

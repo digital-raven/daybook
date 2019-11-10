@@ -11,8 +11,9 @@ with open(path.join(here, 'README.md'), 'r', encoding='utf-8') as f:
 install_requires = []
 if 'DEBBUILD' not in os.environ:
     install_requires = [
-        'dateparser >= 0.7.2, < 1.0',
         'argcomplete >= 1.0',
+        'dateparser >= 0.7.2, < 1.0',
+        'prettytable',
     ]
 
 setup(

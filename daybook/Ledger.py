@@ -73,22 +73,22 @@ class Hints:
         with open(conf) as f:
             s = f.read()
 
-        for l in s.splitlines():
-            if l[0:1] not in string.whitespace:
+        for l_ in s.splitlines():
+            if l_[0:1] not in string.whitespace:
                 # skip comment lines
-                if '#' == l.strip()[0:1]:
+                if '#' == l_.strip()[0:1]:
                     continue
 
                 # else beginning of a new variable declaration.
-                l = l.split('=')
-                curvar = l[0].strip()
-                d[curvar] = ['='.join(l[1:]).strip()]
+                l_ = l_.split('=')
+                curvar = l_[0].strip()
+                d[curvar] = ['='.join(l_[1:]).strip()]
             else:
                 # keep adding to current variable
                 if curvar in d:
-                    d[curvar].append(l.strip())
+                    d[curvar].append(l_.strip())
 
-        return {k:'\n'.join(v).strip() for (k, v) in d.items()}
+        return {k: '\n'.join(v).strip() for (k, v) in d.items()}
 
     def load(self, hints):
         """ Load additional entries from a hints file.
@@ -97,7 +97,8 @@ class Hints:
             hints: path to the hints file.
 
         Raises:
-            FileNotFoundError or PermissionError if the file couldn't be opened.
+            FileNotFoundError or PermissionError if the file
+            couldn't be opened.
         """
         d = self._loadColonConf(hints)
 
@@ -170,10 +171,8 @@ class Ledger:
         Returns:
             The leddger's content's as a CSV string.
         """
-        s = 'date,src,dest,amount,tags,notes\n'
-        for t in self.getTransactions(func):
-            s = s + str(t) + '\n'
-        return s
+        h = ['date,src,dest,amount,tags,notes']
+        return '\n'.join(h + [str(t) for t in self.getTransactions(func)])
 
     def getTransactions(self, func=lambda x: True):
         """ Retrieve a list of filtered transactions.
@@ -371,7 +370,6 @@ class Ledger:
         Raises:
             ValueError: No valid account could be created from string.
         """
-
         l_ = [x for x in string.split(' ') if x]
 
         if l_[0] == 'this':
@@ -403,7 +401,6 @@ class Ledger:
         Returns:
             A reference to the account added/modified within this ledger.
         """
-
         if account.name in self.accounts:
             self.accounts[account.name].addTags(account.tags)
         else:

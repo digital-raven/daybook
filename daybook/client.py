@@ -4,13 +4,49 @@
 import os
 import sys
 import xmlrpc.client
+from collections import defaultdict
 
 import argcomplete
 import dateparser
+import datetime
+from prettytable import PrettyTable
 
 import daybook.parser
 from daybook.config import add_config_args, do_first_time_setup, user_conf
 from daybook.Ledger import Ledger, Hints
+
+
+def get_start_end(start, end, range_):
+    """Compute what the start date and end date should be.
+
+    This function is specific to daybook's argument parsing and how
+    date filters should be decided when a range is provided.
+
+    If start and range are provided, then end = start + range
+
+    Returns:
+        start, end as DateTime objects.
+    """
+    today = dateparser.parse('today')
+    start = dateparser.parse(start) if start else None
+    end = dateparser.parse(end) if end else None
+
+    if range_:
+        range_ = today - dateparser.parse(range_)
+
+    if start and range_:
+        end = start + range_
+    elif end and range_:
+        start = end - range_
+    elif range_:
+        end = today
+        start = end - range_
+        start.hour = 0
+        start.minute = 0
+        start.second = 0
+        start.microsecond = 0
+
+    return start, end
 
 
 def get_dump(server, args):
@@ -24,26 +60,7 @@ def get_dump(server, args):
     Returns:
         Dump from server as string of CSVs.
     """
-    # figure out generic date parsing.
-    today = dateparser.parse('today')
-    args.start = dateparser.parse(args.start) if args.start else None
-    args.end = dateparser.parse(args.end) if args.end else None
-
-    if args.range:
-        args.range = today - dateparser.parse(args.range)
-
-    if args.start and args.range:
-        args.end = args.start + args.range
-    elif args.end and args.range:
-        args.start = args.end - args.range
-    elif args.range:
-        args.end = today
-        args.start = args.end - args.range
-        args.start.hour = 0
-        args.start.minute = 0
-        args.start.second = 0
-        args.start.microsecond = 0
-
+    start, end = get_start_end(args.start, args.end, args.range)
     username = args.username
     password = args.password
     accounts = ' '.join(args.accounts) if args.accounts else None
@@ -53,7 +70,7 @@ def get_dump(server, args):
 
     return server.dump(
         username, password,
-        args.start, args.end,
+        start, end,
         accounts, currencies, types, tags)
 
 
@@ -69,12 +86,78 @@ def do_dump(server, args):
     print(get_dump(server, args))
 
 
-def do_expenses(server, args):
-    print('expenses')
+def do_expense(server, args):
+
+    # set start date for current month
+    if not args.start and not args.end and not args.range:
+        args.start = datetime.date.today()
+        args.start = args.start.replace(day=1)
+        args.start = str(args.start)
+
+    if not args.types:
+        args.types.extend(['expense', 'income'])
+
+    ledger = Ledger(args.primary_currency)
+    ledger.load(get_dump(server, args))
+
+    # income table
+    pt = PrettyTable()
+    pt.field_names = ['Account', 'Balance']
+    pt.align = 'l'
+    for name in sorted([x for x in ledger.accounts if ledger.accounts[x].type == 'income']):
+        account = ledger.accounts[name]
+        balances = []
+        for cur in sorted(account.balances):
+            balance = account.balances[cur]
+            balances.append('{}: {}'.format(cur, -balance))
+
+        pt.add_row([name, '\n'.join(balances)])
+    print('Income')
+    print(pt, '\n')
+
+    # expense table
+    pt = PrettyTable()
+    pt.field_names = ['Account', 'Balance']
+    pt.align = 'l'
+    for name in sorted([x for x in ledger.accounts if ledger.accounts[x].type == 'expense']):
+        account = ledger.accounts[name]
+        balances = []
+        for cur in sorted(account.balances):
+            balance = account.balances[cur]
+            balances.append('{}: {}'.format(cur, balance))
+
+        pt.add_row([name, '\n'.join(balances)])
+    print('Expenses')
+    print(pt, '\n')
+
+    # total cash flow
+    pt = PrettyTable()
+    pt.field_names = ['Currency', 'Balance']
+    pt.align = 'l'
+
+    balances = defaultdict(lambda: 0)
+    for name in sorted(ledger.accounts):
+        account = ledger.accounts[name]
+        if (account.type in ['expense', 'income']):
+            for cur in account.balances:
+                balance = account.balances[cur]
+                balances[cur] -= balance
+
+    for cur, balance in balances.items():
+        pt.add_row([cur, balance])
+
+    print('Cash flow')
+    print(pt, '\n')
 
 
 def get_csv_paths(rootdir):
     """ Return paths to all CSVs from root.
+
+    Args:
+        rootdir: Root directory which will be recursively searched for CSVs.
+
+    Returns:
+        A list of all csv paths.
     """
     csvs = []
     for root, dirs, files in os.walk(rootdir):
@@ -150,21 +233,11 @@ def do_load(server, args):
         sys.exit(1)
 
 
-def do_show(server, args):
-    print('show')
-
-
-def do_summary(server, args):
-    print('summary')
-
-
 functions = {
     'clear': do_clear,
     'dump': do_dump,
-    'expenses': do_expenses,
+    'expense': do_expense,
     'load': do_load,
-    'show': do_show,
-    'summary': do_summary,
 }
 
 
