@@ -92,6 +92,6 @@ def add_config_args(args, config=None):
             if not getattr(args, key):
                 setattr(args, key, cp['default'][key])
         except AttributeError:
-                setattr(args, key, cp['default'][key])
+            setattr(args, key, cp['default'][key])
 
     return args

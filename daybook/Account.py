@@ -34,7 +34,7 @@ class Account:
         Args:
             name: Name of the account. Must contain no spaces.
             type: Type of account. Must be in Account.types.
-            tags: Container of tags for account. The account will 
+            tags: Container of tags for account. The account will
                 create a unique set internally.
         """
 
