@@ -166,14 +166,34 @@ class Ledger:
 
         # keep track of currency suggestions within this spreadsheet.
         last_currencies = {}
-        line_num = 1
+        line_num = 2
         for row in reader:
             try:
                 date = dateparser.parse(row['date'])
+                notes = ''
 
                 # will raise ValueError if invalid.
-                src = self.suggestAccount(row['src'], thisname)
-                dest = self.suggestAccount(row['dest'], thisname)
+                try:
+                    src = self.suggestAccount(row['src'], thisname)
+                    dest = self.suggestAccount(row['dest'], thisname)
+
+                    if 'notes' in row:
+                        notes = row['notes']
+
+                except KeyError:
+                    target = self.suggestAccount(row['target'], thisname)
+                    tmpamount = float(row['amount'])
+                    if tmpamount < 0:
+                        src = self.suggestAccount('this', thisname)
+                        dest = target
+                    else:
+                        src = target
+                        dest = self.suggestAccount('this', thisname)
+
+                    if 'notes' in row:
+                        notes = row['notes']
+
+                    notes = notes or row['target']
 
                 # determine what currencies to use and validate amount
                 suggested_src = ''
@@ -195,8 +215,9 @@ class Ledger:
                 amount = Amount.createFromStr(
                     row['amount'], suggested_src, suggested_dest)
 
-                tags = [x for x in row['tags'].split(':') if x]
-                notes = row['notes']
+                tags = []
+                if 'tags' in row:
+                    tags = [x for x in row['tags'].split(':') if x]
 
                 # will raise ValueError if invalid.
                 t = Transaction(date, src, dest, amount, tags, notes)
@@ -206,6 +227,8 @@ class Ledger:
                 last_currencies[dest.name] = amount.dest_currency
             except ValueError as ve:
                 raise ValueError('Line {}: {}'.format(line_num, ve))
+            except KeyError:
+                raise ValueError('Does not contain expected headings.')
 
             newtrans.append(t)
             line_num = line_num + 1

@@ -103,10 +103,6 @@ def create_main_parser():
         '--config',
         help='Select custom configuration file.')
     parser.add_argument(
-        '--ledger-root',
-        metavar='DIR',
-        help='Custom directory to load CSVs from.')
-    parser.add_argument(
         '--primary-currency',
         metavar='CURRENCY',
         help='Override primary_currency in config.')
@@ -155,6 +151,18 @@ def create_main_parser():
             'List of CSVs to load. If not provided, then daybook will use '
             'the csvs within ledger_root.'),
         nargs='*')
+
+    sp.add_argument(
+        '--ledger-root',
+        metavar='DIR',
+        help='Custom directory to load CSVs from.')
+
+    sp.add_argument(
+        '--hints',
+        metavar='HINTSFILE',
+        help=(
+            'Specify a custom hints.ini. Default action is to '
+            'search ledger-root'))
 
     # show command
     sp = subparsers.add_parser(
