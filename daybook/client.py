@@ -85,19 +85,47 @@ def get_csv_paths(rootdir):
 def do_load(server, args):
     """ Load a local ledger with CSVs and dump to daybookd.
     """
-    # find all csvs in ledger_root if no csvs provided.
-    csvs = args.csv if args.csv else get_csv_paths(args.ledger_root)
-    hintsfile = '{}/hints.ini'.format(args.ledger_root)
-    if not os.path.exists(hintsfile):
-        hintsfile = ''
+    csvs = []
+    hints = ''
+    if args.csv:
+        csvs = args.csv
+
+        if args.hints:
+            hints = args.hints
+            if not os.path.exists(hints):
+                print('ERROR: Hintsfile {} does not exist'.format(hints))
+                sys.exit(1)
+    else:
+        # find all csvs in ledger_root if no csvs provided.
+        if not args.ledger_root:
+            print(
+                'ERROR: No ledger_root specified on '
+                'command-line or in {}'.format(args.config))
+            sys.exit(1)
+
+        csvs = get_csv_paths(args.ledger_root)
+
+        if args.hints:
+            hints = args.hints
+            if not os.path.exists(hints):
+                print('ERROR: Hintsfile {} does not exist'.format(hints))
+                sys.exit(1)
+        else:
+            hints = '{}/hints.ini'.format(args.ledger_root)
+            if not os.path.exists(hints):
+                hints = ''
 
     if not csvs:
         print('No CSVs found in {}.'.format(args.ledger_root))
         return
 
-    ledger = Ledger(args.primary_currency, hintsini=hintsfile)
-    ledger.loadCsvs(csvs)
-    server.load(args.username, args.password, ledger.dump())
+    ledger = Ledger(args.primary_currency, hintsini=hints)
+    try:
+        ledger.loadCsvs(csvs)
+        server.load(args.username, args.password, ledger.dump())
+    except ValueError as ve:
+        print(ve)
+        sys.exit(1)
 
 
 def do_show(server, args):
@@ -148,12 +176,6 @@ def main():
 
     if not args.username or not args.password:
         print('ERROR: No username or password specified.')
-        sys.exit(1)
-
-    if not args.ledger_root:
-        print(
-            'ERROR: No ledger_root specified on '
-            'command-line or in {}'.format(args.config))
         sys.exit(1)
 
     if not args.primary_currency:
