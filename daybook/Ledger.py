@@ -309,7 +309,7 @@ class Ledger:
             l_[0] = thisname
 
         if l_[0] not in self.accounts:
-            suggestion = self.hints.suggest(' '.join(l_))
+            suggestion = self.hints.suggest(string)
             if suggestion:
                 l_ = [suggestion]
 
