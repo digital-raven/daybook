@@ -88,7 +88,21 @@ def do_load(server, args):
     csvs = []
     hints = ''
     if args.csv:
-        csvs = args.csv
+        for csv in args.csv:
+            if not os.path.exists(csv):
+                print('ERROR: {} does not exist.'.format(csv))
+                sys.exit(1)
+            elif os.path.isfile(csv):
+                csvs.append(csv)
+            elif os.path.isdir(csv):
+                csvs.extend(get_csv_paths(csv))
+            else:
+                print('ERROR: {} is not a regular file or dir.'.format(csv))
+                sys.exit(1)
+
+        if not csvs:
+            print('ERROR: No CSVs found in specified locations.')
+            return
 
         if args.hints:
             hints = args.hints
@@ -105,6 +119,10 @@ def do_load(server, args):
 
         csvs = get_csv_paths(args.ledger_root)
 
+        if not csvs:
+            print('No CSVs found in {}.'.format(args.ledger_root))
+            return
+
         if args.hints:
             hints = args.hints
             if not os.path.exists(hints):
@@ -114,10 +132,6 @@ def do_load(server, args):
             hints = '{}/hints.ini'.format(args.ledger_root)
             if not os.path.exists(hints):
                 hints = ''
-
-    if not csvs:
-        print('No CSVs found in {}.'.format(args.ledger_root))
-        return
 
     ledger = Ledger(args.primary_currency, hintsini=hints)
     try:
