@@ -7,7 +7,7 @@ from daybook.Account import Account
 from daybook.Transaction import Transaction
 
 
-pcurr = 'dollars'
+pcurr = 'dollar'
 resources = '{}/resources'.format(os.path.dirname(__file__))
 
 
@@ -27,11 +27,11 @@ class TestLedger(unittest.TestCase):
 
         self.assertEqual('my-employer', src.name)
         self.assertEqual('income', src.type)
-        self.assertEqual(-100, src.balances['dollars'])
+        self.assertEqual(-100, src.balances['dollar'])
 
         self.assertEqual('my-checking', dest.name)
         self.assertEqual('asset', dest.type)
-        self.assertEqual(100, dest.balances['dollars'])
+        self.assertEqual(100, dest.balances['dollar'])
 
         self.assertTrue('paystub' in t.tags)
         self.assertEqual(t.src, src)
@@ -51,8 +51,8 @@ class TestLedger(unittest.TestCase):
         src = ledger.accounts['my-checking']
         dest = ledger.accounts['grocery']
 
-        self.assertEqual(-45.77, src.balances['dollars'])
-        self.assertEqual(45.77, dest.balances['dollars'])
+        self.assertEqual(-45.77, src.balances['dollar'])
+        self.assertEqual(45.77, dest.balances['dollar'])
 
         self.assertEqual('asset', src.type)
         self.assertEqual('expense', dest.type)
@@ -83,7 +83,7 @@ class TestLedger(unittest.TestCase):
         emp = ledger.accounts['employer-payroll']
         self.assertEqual('employer-payroll', emp.name)
         self.assertEqual('income', emp.type)
-        self.assertEqual(-100, emp.balances['dollars'])
+        self.assertEqual(-100, emp.balances['dollar'])
 
     def test_multiple_transactions(self):
         """ Multiple transactions from a single csv should zero.
@@ -100,7 +100,7 @@ class TestLedger(unittest.TestCase):
             ac = ledger.accounts[a]
             self.assertEqual(a, ac.name)
 
-        s = sum([x.balances['dollars'] for y, x in ledger.accounts.items()])
+        s = sum([x.balances['dollar'] for y, x in ledger.accounts.items()])
         self.assertEqual(0, s)
 
     def test_multiple_csvs_redundant(self):
@@ -123,11 +123,11 @@ class TestLedger(unittest.TestCase):
         self.assertEqual(4, len(ledger.accounts))
         self.assertEqual(4, len(ledger.transactions))
 
-        self.assertEqual(0, ledger.accounts['car-loan'].balances['dollars'])
+        self.assertEqual(0, ledger.accounts['car-loan'].balances['dollar'])
         self.assertEqual(
-            100, ledger.accounts['my-checking'].balances['dollars'])
+            100, ledger.accounts['my-checking'].balances['dollar'])
         self.assertEqual(
-            -200, ledger.accounts['my-company-payroll'].balances['dollars'])
+            -200, ledger.accounts['my-company-payroll'].balances['dollar'])
 
     def test_multiple_csvs_tags(self):
         """ Tags from duplicate transactions should sum.
