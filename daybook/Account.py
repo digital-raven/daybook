@@ -63,9 +63,7 @@ class Account:
         self.tags.update(tmp)
 
     def addTransactions(self, transactions):
-        """ Add transactions to this account
-
-        The account will only add transasctions that include this account.
+        """ Add transactions to this account.
 
         Args:
             transactions: List of transactions to add.
