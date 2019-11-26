@@ -148,21 +148,29 @@ def create_main_parser():
     sp.add_argument(
         'csv',
         help=(
-            'List of CSVs to load. If not provided, then daybook will use '
-            'the csvs within ledger_root.'),
+            """List of CSVs to load.
+
+            Directories and regular CSV files may be specified. Directories
+            will be recursively searched for CSVs.
+
+            If not provided, then daybook will use the CSVs within ledger_root.
+            """),
         nargs='*')
 
     sp.add_argument(
         '--ledger-root',
         metavar='DIR',
-        help='Custom directory to load CSVs from.')
+        help=(
+            'Override the ledger_root in the config. The specified directory '
+            'will be recursively searched for CSVs. This argument will only '
+            'be used if no individual CSVs or other directories were '
+            'specified. This directory may also contain a hints.ini at '
+            'the top level.'))
 
     sp.add_argument(
         '--hints',
         metavar='HINTSFILE',
-        help=(
-            'Specify a custom hints.ini. Default action is to '
-            'search ledger-root'))
+        help='Specify a custom hints.ini.')
 
     # show command
     sp = subparsers.add_parser(
