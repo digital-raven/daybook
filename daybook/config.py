@@ -17,7 +17,7 @@ user_conf = '{}/daybook.ini'.format(user_confdir)
 def do_first_time_setup():
     """ Create ledger root and copy default.ini to user conf path.
     """
-    charset = string.ascii_uppercase + string.digits
+    charset = string.ascii_lowercase + string.ascii_uppercase + string.digits
 
     # use these vals to create user config if not present in system defaults.
     default_vals = {}
@@ -73,7 +73,7 @@ def add_config_args(args, config=None):
 
     Raises:
         FileNotFoundError: Provided config file doesn't exist.
-        KeyError: Configuration file has no defualt section.
+        KeyError: Configuration file has no default section (or no sections).
     """
     config = user_conf if not config else config
 
@@ -81,7 +81,11 @@ def add_config_args(args, config=None):
         raise FileNotFoundError('Config {} does not exist.'.format(config))
 
     cp = configparser.ConfigParser()
-    cp.read(config)
+
+    try:
+        cp.read(config)
+    except Exception as e:
+        raise KeyError('Config "{}" is invalid. {}.'.format(config, e))
 
     if 'default' not in cp:
         raise KeyError('Config {} has no "default" section.'.format(config))
