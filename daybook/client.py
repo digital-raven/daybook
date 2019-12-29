@@ -10,7 +10,7 @@ import dateparser
 
 import daybook.parser
 from daybook.config import add_config_args, do_first_time_setup, user_conf
-from daybook.Ledger import Ledger
+from daybook.Ledger import Ledger, Hints
 
 
 def get_dump(server, args):
@@ -86,8 +86,18 @@ def do_load(server, args):
     """ Load a local ledger with CSVs and dump to daybookd.
     """
     csvs = []
-    hints = ''
+    hints_p = ''
+    hints = None
     if args.csv:
+        if args.hints:
+            hints_p = args.hints
+
+        try:
+            hints = Hints(hintsini=hints_p)
+        except Exception as e:
+            print('ERROR: "{}" is not a valid hints file. {}'.format(hints_p, e))
+            sys.exit(1)
+
         for csv in args.csv:
             if not os.path.exists(csv):
                 print('ERROR: {} does not exist.'.format(csv))
@@ -103,12 +113,6 @@ def do_load(server, args):
         if not csvs:
             print('ERROR: No CSVs found in specified locations.')
             return
-
-        if args.hints:
-            hints = args.hints
-            if not os.path.exists(hints):
-                print('ERROR: Hintsfile {} does not exist'.format(hints))
-                sys.exit(1)
     else:
         # find all csvs in ledger_root if no csvs provided.
         if not args.ledger_root:
@@ -119,21 +123,25 @@ def do_load(server, args):
 
         csvs = get_csv_paths(args.ledger_root)
 
+        # verify hints file before verifying provided csv.
+        if args.hints:
+            hints_p = args.hints
+        else:
+            hints_p = '{}/hints.ini'.format(args.ledger_root)
+            if not os.path.exists(hints_p):
+                hints_p = ''
+
+        try:
+            hints = Hints(hintsini=hints_p)
+        except Exception as e:
+            print('ERROR: "{}" is not a valid hints file. {}.'.format(hints_p, e))
+            sys.exit(1)
+
         if not csvs:
             print('No CSVs found in {}.'.format(args.ledger_root))
             return
 
-        if args.hints:
-            hints = args.hints
-            if not os.path.exists(hints):
-                print('ERROR: Hintsfile {} does not exist'.format(hints))
-                sys.exit(1)
-        else:
-            hints = '{}/hints.ini'.format(args.ledger_root)
-            if not os.path.exists(hints):
-                hints = ''
-
-    ledger = Ledger(args.primary_currency, hintsini=hints)
+    ledger = Ledger(args.primary_currency, hints=hints)
     try:
         ledger.loadCsvs(csvs)
         server.load(args.username, args.password, ledger.dump())

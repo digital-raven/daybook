@@ -228,7 +228,7 @@ class Ledger:
             except ValueError as ve:
                 raise ValueError('Line {}: {}'.format(line_num, ve))
             except KeyError:
-                raise ValueError('Does not contain expected headings.')
+                raise ValueError('Line {}: Does not contain expected fields.'.format(line_num))
 
             newtrans.append(t)
             line_num = line_num + 1
