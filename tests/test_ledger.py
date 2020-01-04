@@ -16,7 +16,7 @@ class TestLedger(unittest.TestCase):
     def test_single_transaction(self):
         """ Verify correct behavior for single csv.
         """
-        ledger = Ledger(pcurr, hintsini='{}/hints.ini'.format(resources))
+        ledger = Ledger(pcurr, hints='{}/hints'.format(resources))
         ledger.loadCsv('{}/single.csv'.format(resources))
 
         src = ledger.accounts['my-employer']
@@ -41,7 +41,7 @@ class TestLedger(unittest.TestCase):
     def test_hints_match(self):
         """ Verify that account names can be inferred from hints.
         """
-        ledger = Ledger(pcurr, hintsini='{}/hints.ini'.format(resources))
+        ledger = Ledger(pcurr, hints='{}/hints'.format(resources))
         ledger.loadCsv('{}/single-hints/my-checking.csv'.format(resources))
 
         self.assertTrue('void' in ledger.accounts)
@@ -75,7 +75,7 @@ class TestLedger(unittest.TestCase):
         Transactions that contain 'this' as the account name should
         substitute the basename of the csv.
         """
-        ledger = Ledger(pcurr, hintsini='{}/hints.ini'.format(resources))
+        ledger = Ledger(pcurr, hints='{}/hints'.format(resources))
         ledger.loadCsv('{}/employer-payroll.csv'.format(resources))
 
         self.assertTrue('employer-payroll' in ledger.accounts)
@@ -89,7 +89,7 @@ class TestLedger(unittest.TestCase):
         """ Multiple transactions from a single csv should zero.
         """
 
-        ledger = Ledger(pcurr, hintsini='{}/hints.ini'.format(resources))
+        ledger = Ledger(pcurr, hints='{}/hints'.format(resources))
         ledger.loadCsv('{}/loan-payoff.csv'.format(resources))
 
         self.assertEqual(4, len(ledger.accounts))

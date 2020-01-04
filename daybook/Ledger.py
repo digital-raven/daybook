@@ -5,6 +5,7 @@ import configparser
 import csv
 import io
 import os
+import string
 
 import dateparser
 
@@ -14,47 +15,113 @@ from daybook.Transaction import Transaction
 
 
 class Hints:
-    def __init__(self, hintsini=''):
-        self.hints = {}
-        if hintsini:
-            self.load(hintsini)
-
-    def load(self, hintsini):
-        """ Add hints from a hints.ini
-
-        Accepts a path to an ini where each entry is an account name. Each line
-        indicates a name that, if found within a transaction's src, or dest
-        fields, belongs to that transaction.
+    def __init__(self, hints=''):
+        """ Constructor for Hints class
 
         Args:
-            hintsini: Path to hints ini.
+            hints: Path to the hints file.
+        """
+        self.hints = {}
+        if hints:
+            self.load(hints)
+
+    def _loadColonConf(self, conf):
+        """ Load a colonconf as a dict.
+
+        A colonconf is a simple conf file format where the variable names
+        are allowed to contain anything, but the reason for creating this
+        was to permit colons in the names.
+
+        Some entries might look like this.
+
+            simplevar=4
+            my:var:name = line1
+                line2
+
+            multi:line2 =
+                first
+                second
+
+        And the associated dict will contain the following. All keys and
+        values are str type.
+
+            {'simplevar':'4',
+             'my:var:name':'line1\nline2',
+             'multi:line2':'first\nsecond'}
+
+        Values extending multiple lines require at least one preceeding
+        whitespace character on the additional lines.
+
+        Line comments are supported as well. The line must begin with a '#'
+        and have no preceeding white-space.
+
+        Args:
+            conf: Path to the colon conf.
+
+        Returns:
+            A dictionary where the keys are the vars read from the file
+            and the values are the associated strings.
 
         Raises:
-            FileNotFoundError or PermissionError if the hints.ini could not
+            FileNotFoundError or PermissionError if the file could not
             be opened.
         """
-        c = configparser.ConfigParser()
+        curvar = None
+        d = {}
+        s = ''
 
-        # confparser.read doesn't error on file-not-found or bad permissions.
-        stream = open(hintsini, 'r')
-        stream.close()
+        with open(conf) as f:
+            s = f.read()
 
-        c.read(hintsini)
+        for l in s.splitlines():
+            if l[0:1] not in string.whitespace:
+                # skip comment lines
+                if '#' == l.strip()[0:1]:
+                    continue
 
-        if 'hints' not in c:
-            return
+                # else beginning of a new variable declaration.
+                l = l.split('=')
+                curvar = l[0].strip()
+                d[curvar] = ['='.join(l[1:]).strip()]
+            else:
+                # keep adding to current variable
+                if curvar in d:
+                    d[curvar].append(l.strip())
 
-        for key, value in c['hints'].items():
+        return {k:'\n'.join(v).strip() for (k, v) in d.items()}
+
+    def load(self, hints):
+        """ Load additional entries from a hints file.
+
+        Args:
+            hints: path to the hints file.
+
+        Raises:
+            FileNotFoundError or PermissionError if the file couldn't be opened.
+        """
+        d = self._loadColonConf(hints)
+
+        for key, value in d.items():
             lines = [x for x in value.splitlines() if x]
             for line in lines:
                 self.hints[line] = key
 
-    def suggest(self, string):
-        if string in self.hints:
-            return self.hints[string]
+    def suggest(self, s):
+        """ Suggest an entry given a string.
+
+        Args:
+            s: The string to search for within self.hints.
+
+        Returns:
+            If s is an exact match, then that value is returned. If not, then
+            self.hints is searched for a key which contains s. If one is found,
+            then that value is returned. First-come only-served.
+        """
+        if s in self.hints:
+            return self.hints[s]
 
         for key, value in self.hints.items():
-            if key in string:
+            if key in s:
                 return value
 
         return ''
@@ -62,14 +129,16 @@ class Hints:
 
 class Ledger:
 
-    def __init__(self, primary_currency, hints=None, hintsini=''):
-        if not hints:
-            hints = Hints(hintsini)
+    def __init__(self, primary_currency, hints=None):
+
+        if isinstance(hints, Hints):
+            self.hints = hints
+        else:
+            self.hints = Hints(hints)
 
         self.primary_currency = primary_currency
         self.accounts = {}
         self.transactions = []
-        self.hints = hints
 
         # Detect redundant transactions.
         self.unique_transactions = dict()
@@ -79,7 +148,7 @@ class Ledger:
         """
         self.accounts = {}
         self.transactions = []
-        self.hints = Hints('')
+        self.hints = Hints()
         self.unique_transactions = dict()
 
     def sort(self):

@@ -93,7 +93,7 @@ def do_load(server, args):
             hints_p = args.hints
 
         try:
-            hints = Hints(hintsini=hints_p)
+            hints = Hints(hints=hints_p)
         except Exception as e:
             print('ERROR: "{}" is not a valid hints file. {}'.format(hints_p, e))
             sys.exit(1)
@@ -127,12 +127,12 @@ def do_load(server, args):
         if args.hints:
             hints_p = args.hints
         else:
-            hints_p = '{}/hints.ini'.format(args.ledger_root)
+            hints_p = '{}/hints'.format(args.ledger_root)
             if not os.path.exists(hints_p):
                 hints_p = ''
 
         try:
-            hints = Hints(hintsini=hints_p)
+            hints = Hints(hints=hints_p)
         except Exception as e:
             print('ERROR: "{}" is not a valid hints file. {}.'.format(hints_p, e))
             sys.exit(1)
