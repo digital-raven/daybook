@@ -12,7 +12,7 @@ class TestHints(unittest.TestCase):
     def test_hints(self):
         """ Verify hints can load from an ini file and find substr matches.
         """
-        hints = Hints('{}/hints.ini'.format(resources))
+        hints = Hints('{}/hints'.format(resources))
         self.assertEqual('', hints.suggest('micro'))
         self.assertEqual('computer', hints.suggest('micro-center'))
         self.assertEqual('gasoline', hints.suggest('BP BEYOND PETROLEUM #123'))
@@ -30,7 +30,7 @@ class TestHints(unittest.TestCase):
         """ hints should be empty if given empty file.
         """
         hints = Hints()
-        hints.load('{}/empty-hints.ini'.format(resources))
+        hints.load('{}/empty-hints'.format(resources))
         self.assertTrue(not hints.hints)
 
 
