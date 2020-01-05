@@ -158,7 +158,6 @@ def do_summary(server, args):
     print('summary')
 
 
-# called during interactive mode. each function accepts args, ledger.
 functions = {
     'clear': do_clear,
     'dump': do_dump,
