@@ -56,7 +56,7 @@ def in_types(types, t):
 
 
 def in_tags(tags, t):
-    return not tags or len(tags.intersect(get_all_tags(t))) > 0
+    return not tags or len(tags.intersection(get_all_tags(t))) > 0
 
 
 def filter_transaction(t, start, end, accounts, currencies, types, tags):
