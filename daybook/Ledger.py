@@ -14,9 +14,22 @@ from daybook.Amount import Amount
 from daybook.Transaction import Transaction
 
 
+def get_nums(s):
+    """ Returns list of nums found within a string.
+    """
+    s = s.replace(':', ' ').split()
+    nums = []
+    for tok in s:
+        try:
+            nums.append(float(tok))
+        except ValueError:
+            pass
+    return nums
+
+
 class Hints:
     def __init__(self, hints=''):
-        """ Constructor for Hints class
+        """ Constructor for Hints class.
 
         Args:
             hints: Path to the hints file.
@@ -238,30 +251,46 @@ class Ledger:
         for row in reader:
             try:
                 date = dateparser.parse(row['date'])
+
                 notes = ''
+                if 'notes' in row:
+                    notes = row['notes']
+
+                # determine src and dest accounts.
+                src = None
+                dest = None
 
                 # will raise ValueError if invalid.
-                try:
+                if 'src' in row:
                     src = self.suggestAccount(row['src'], thisname)
+
+                if 'dest' in row:
                     dest = self.suggestAccount(row['dest'], thisname)
 
-                    if 'notes' in row:
-                        notes = row['notes']
-
-                except KeyError:
+                if (not src or not dest) and 'target' in row:
                     target = self.suggestAccount(row['target'], thisname)
-                    tmpamount = float(row['amount'])
-                    if tmpamount < 0:
-                        src = self.suggestAccount('this', thisname)
-                        dest = target
-                    else:
-                        src = target
-                        dest = self.suggestAccount('this', thisname)
-
-                    if 'notes' in row:
-                        notes = row['notes']
-
                     notes = notes or row['target']
+
+                    if src:
+                        dest = target
+                    elif dest:
+                        src = target
+                    else:
+                        # determine src and dest based on sign of first num.
+                        try:
+                            tmpamount = get_nums(row['amount'])[0]
+                        except IndexError:
+                            raise ValueError('No quantities in "amount" field')
+
+                        if tmpamount < 0:
+                            src = self.suggestAccount('this', thisname)
+                            dest = target
+                        else:
+                            src = target
+                            dest = self.suggestAccount('this', thisname)
+
+                src = src or self.suggestAccount('this', thisname)
+                dest = dest or self.suggestAccount('this', thisname)
 
                 # determine what currencies to use and validate amount
                 suggested_src = ''
@@ -346,7 +375,8 @@ class Ledger:
             # commit the transaction
             self.transactions.append(t)
             t.src.addTransaction(t)
-            t.dest.addTransaction(t)
+            if t.src is not t.dest:
+                t.dest.addTransaction(t)
             self.unique_transactions[t] = t
 
             return t
@@ -355,28 +385,30 @@ class Ledger:
             internal.addTags(t.tags)
             return internal
 
-    def suggestAccount(self, string, thisname='uncategorized'):
+    def suggestAccount(self, s, thisname='uncategorized'):
         """ Parse a string and create an account reference from it.
 
         Uses self.hints to help with account creation.
 
         Args:
-            string: String containing account information.
+            s: String from which a suggestion will be made.
             thisname: Name to use for src or dest in case they're named 'this'.
 
         Returns:
             New Account reference.
 
         Raises:
-            ValueError: No valid account could be created from string.
+            ValueError: No valid account could be created from s.
         """
-        l_ = [x for x in string.split(' ') if x]
+        s = s or 'void'
+
+        l_ = [x for x in s.split(' ') if x]
 
         if l_[0] == 'this':
             l_[0] = thisname
 
         if l_[0] not in self.accounts:
-            suggestion = self.hints.suggest(string)
+            suggestion = self.hints.suggest(s)
             if suggestion:
                 l_ = [suggestion]
 

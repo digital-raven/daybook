@@ -246,6 +246,13 @@ class TestAmount(unittest.TestCase):
         with self.assertRaises(ValueError):
             Amount.createFromStr('usd:10 usd:100', 'mxn', 'jpy')
 
+    def test_abs(self):
+        """ Absolute values should be used for both sides.
+        """
+        a = Amount.createFromStr('-100', 'mxn', 'jpy')
+        self.assertEqual(100, a.src_amount)
+        self.assertEqual(100, a.dest_amount)
+
 
 if __name__ == '__main__':
     unittest.main()
