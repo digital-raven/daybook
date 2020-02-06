@@ -159,6 +159,18 @@ class TestAccount(unittest.TestCase):
         # verify this sum would otherwise be non-zero
         self.assertFalse(3.33 - 4.32 + 0.99 == 0)
 
+    def test_self_trade(self):
+        """ An account should be able to trade with itself.
+        """
+        a = Account('a')
+        x = Amount('jpy', 3.33, 'usd', 10)
+
+        t = Transaction(dateparser.parse('today'), a, a, x)
+        a.addTransaction(t)
+
+        self.assertEqual(-3.33, a.balances['jpy'])
+        self.assertEqual(10, a.balances['usd'])
+
 
 if __name__ == '__main__':
     unittest.main()

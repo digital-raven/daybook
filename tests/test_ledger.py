@@ -7,7 +7,7 @@ from daybook.Account import Account
 from daybook.Transaction import Transaction
 
 
-pcurr = 'dollar'
+pcurr = 'usd'
 resources = '{}/resources'.format(os.path.dirname(__file__))
 
 
@@ -27,11 +27,11 @@ class TestLedger(unittest.TestCase):
 
         self.assertEqual('my-employer', src.name)
         self.assertEqual('income', src.type)
-        self.assertEqual(-100, src.balances['dollar'])
+        self.assertEqual(-100, src.balances['usd'])
 
         self.assertEqual('my-checking', dest.name)
         self.assertEqual('asset', dest.type)
-        self.assertEqual(100, dest.balances['dollar'])
+        self.assertEqual(100, dest.balances['usd'])
 
         self.assertTrue('paystub' in t.tags)
         self.assertEqual(t.src, src)
@@ -51,8 +51,8 @@ class TestLedger(unittest.TestCase):
         src = ledger.accounts['my-checking']
         dest = ledger.accounts['grocery']
 
-        self.assertEqual(-45.77, src.balances['dollar'])
-        self.assertEqual(45.77, dest.balances['dollar'])
+        self.assertEqual(-45.77, src.balances['usd'])
+        self.assertEqual(45.77, dest.balances['usd'])
 
         self.assertEqual('asset', src.type)
         self.assertEqual('expense', dest.type)
@@ -83,7 +83,7 @@ class TestLedger(unittest.TestCase):
         emp = ledger.accounts['employer-payroll']
         self.assertEqual('employer-payroll', emp.name)
         self.assertEqual('income', emp.type)
-        self.assertEqual(-100, emp.balances['dollar'])
+        self.assertEqual(-100, emp.balances['usd'])
 
     def test_multiple_transactions(self):
         """ Multiple transactions from a single csv should zero.
@@ -100,7 +100,7 @@ class TestLedger(unittest.TestCase):
             ac = ledger.accounts[a]
             self.assertEqual(a, ac.name)
 
-        s = sum([x.balances['dollar'] for y, x in ledger.accounts.items()])
+        s = sum([x.balances['usd'] for y, x in ledger.accounts.items()])
         self.assertEqual(0, s)
 
     def test_multiple_csvs_redundant(self):
@@ -123,11 +123,11 @@ class TestLedger(unittest.TestCase):
         self.assertEqual(4, len(ledger.accounts))
         self.assertEqual(4, len(ledger.transactions))
 
-        self.assertEqual(0, ledger.accounts['car-loan'].balances['dollar'])
+        self.assertEqual(0, ledger.accounts['car-loan'].balances['usd'])
         self.assertEqual(
-            100, ledger.accounts['my-checking'].balances['dollar'])
+            100, ledger.accounts['my-checking'].balances['usd'])
         self.assertEqual(
-            -200, ledger.accounts['my-company-payroll'].balances['dollar'])
+            -200, ledger.accounts['my-company-payroll'].balances['usd'])
 
     def test_multiple_csvs_tags(self):
         """ Tags from duplicate transactions should sum.
@@ -164,6 +164,74 @@ class TestLedger(unittest.TestCase):
         ledger2.load(ledger1.dump())
 
         self.assertEqual(ledger1.dump(), ledger2.dump())
+
+    def test_target_direction_no_dest(self):
+        """ target implies dest if src is present.
+        """
+        lines = (
+            'date,src,target,amount\n'
+            'today,checking,food,10')
+        ledger = Ledger(pcurr)
+        ledger.load(lines)
+        self.assertEqual(10, ledger.accounts['food'].balances['usd'])
+        self.assertEqual(-10, ledger.accounts['checking'].balances['usd'])
+
+    def test_target_direction_no_src(self):
+        """ target implies src if dest is present.
+        """
+        lines = (
+            'date,dest,target,amount\n'
+            'today,dest,src,10')
+        ledger = Ledger(pcurr)
+        ledger.load(lines)
+        self.assertEqual(-10, ledger.accounts['src'].balances['usd'])
+        self.assertEqual(10, ledger.accounts['dest'].balances['usd'])
+
+    def test_target_only(self):
+        """ Sign determines direction if no src or dest.
+        """
+        lines = (
+            'date,target,amount\n'
+            'today,food,-10\n'
+            'today,saving,10')
+        ledger = Ledger(pcurr)
+        ledger.load(lines, thisname='checking')
+        self.assertEqual(0, ledger.accounts['checking'].balances['usd'])
+        self.assertEqual(10, ledger.accounts['food'].balances['usd'])
+        self.assertEqual(-10, ledger.accounts['saving'].balances['usd'])
+
+    def test_no_src_dest_target(self):
+        """ 'this' should be used if no accounts specified.
+        """
+        lines = (
+            'date,amount\n'
+            'today,10 usd 40 shares')
+        ledger = Ledger(pcurr)
+        ledger.load(lines, thisname='brokerage')
+        self.assertEqual(-10, ledger.accounts['brokerage'].balances['usd'])
+        self.assertEqual(40, ledger.accounts['brokerage'].balances['shares'])
+
+    def test_empty_src_void(self):
+        """ If the src entry is empty, then void should be used.
+        """
+        lines = (
+            'date,src,amount\n'
+            'today,,10')
+        ledger = Ledger(pcurr)
+        ledger.load(lines, thisname='checking')
+        self.assertEqual(10, ledger.accounts['checking'].balances['usd'])
+        self.assertEqual(-10, ledger.accounts['void'].balances['usd'])
+
+    def test_empty_dest_void(self):
+        """ Same as above, but with dest.
+        """
+        lines = (
+            'date,dest,amount\n'
+            'today,,10')
+        ledger = Ledger(pcurr)
+        ledger.load(lines, thisname='checking')
+        self.assertEqual(-10, ledger.accounts['checking'].balances['usd'])
+        self.assertEqual(10, ledger.accounts['void'].balances['usd'])
 
 
 if __name__ == '__main__':
