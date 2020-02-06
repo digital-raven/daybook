@@ -7,7 +7,7 @@ from daybook.Amount import Amount
 from daybook.Transaction import Transaction
 
 
-amount = Amount('yen', 10, 'yen', 10)
+amount = Amount('jpy', 10, 'jpy', 10)
 
 
 class TestAccount(unittest.TestCase):
@@ -37,7 +37,7 @@ class TestAccount(unittest.TestCase):
             t.append(Transaction(dateparser.parse('today'), a, a, amount))
 
         a.addTransactions(t)
-        self.assertEqual(0, a.balances['yen'])
+        self.assertEqual(0, a.balances['jpy'])
 
     def test_create_from_list_zero(self):
         """ An account created from list 0 should raise ValueError
@@ -86,7 +86,7 @@ class TestAccount(unittest.TestCase):
         a = Account('a')
         t = Transaction(dateparser.parse('today'), a, a, amount)
         a.addTransaction(t)
-        self.assertEqual(0, a.balances['yen'])
+        self.assertEqual(0, a.balances['jpy'])
         self.assertEqual(1, len(a.transactions))
 
     def test_add_transaction_not_me(self):
@@ -111,8 +111,8 @@ class TestAccount(unittest.TestCase):
         a.addTransactions(t)
         b.addTransactions(t)
 
-        self.assertEqual(-90, a.balances['yen'])
-        self.assertEqual(90, b.balances['yen'])
+        self.assertEqual(-90, a.balances['jpy'])
+        self.assertEqual(90, b.balances['jpy'])
 
     def test_balance_liability_payoff(self):
         """ Verify asset account's ability to pay off debt
@@ -130,9 +130,9 @@ class TestAccount(unittest.TestCase):
         liab.addTransactions([t1, t3])
         void.addTransactions([t1, t2])
 
-        self.assertEqual(0, void.balances['yen'])
-        self.assertEqual(0, a.balances['yen'])
-        self.assertEqual(0, liab.balances['yen'])
+        self.assertEqual(0, void.balances['jpy'])
+        self.assertEqual(0, a.balances['jpy'])
+        self.assertEqual(0, liab.balances['jpy'])
 
     def test_balance_rounding(self):
         """ Very small numbers should not fail balance tests.
@@ -140,9 +140,9 @@ class TestAccount(unittest.TestCase):
         a = Account('a')
         b = Account('b')
 
-        x = Amount('yen', 3.33, 'yen', 3.33)
-        y = Amount('yen', 4.32, 'yen', 4.32)
-        z = Amount('yen', 0.99, 'yen', 0.99)
+        x = Amount('jpy', 3.33, 'jpy', 3.33)
+        y = Amount('jpy', 4.32, 'jpy', 4.32)
+        z = Amount('jpy', 0.99, 'jpy', 0.99)
 
         t = []
         t.append(Transaction(dateparser.parse('today'), a, b, x))
@@ -152,7 +152,7 @@ class TestAccount(unittest.TestCase):
         a.addTransactions(t)
         b.addTransactions(t)
 
-        s = sum([s.balances['yen'] for s in [a, b]])
+        s = sum([s.balances['jpy'] for s in [a, b]])
 
         self.assertEqual(0, s)
 

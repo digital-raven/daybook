@@ -87,21 +87,21 @@ class Amount:
             10 => valid => src:10 dest:10
 
         double
-            10 dollar => valid => dollar:10 dollar:10
-            dollar 10 => valid => dollar:10 dollar:10
+            10 usd => valid => usd:10 usd:10
+            usd 10 => valid => usd:10 usd:10
             10 20 => valid => src:10 dest:20
 
         triple
-            dollar 10 20 => valid => dollar:10 dest:20
-            10 20 dollar => valid => src:10 dollar:20
+            usd 10 20 => valid => usd:10 dest:20
+            10 20 usd => valid => src:10 usd:20
 
         quadruple
-            10 20 dollar peso => valid
-            dollar peso 10 20 => valid
-            10 dollar 20 peso => valid
-            dollar 10 peso 20 => valid
-            dollar 10 20 peso => valid
-            dollar 10 peso 20 => valid
+            10 20 usd mxn => valid
+            usd mxn 10 20 => valid
+            10 usd 20 mxn => valid
+            usd 10 mxn 20 => valid
+            usd 10 20 mxn => valid
+            usd 10 mxn 20 => valid
         """
 
         scurr = None
