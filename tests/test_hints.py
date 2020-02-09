@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from daybook.Ledger import Hints
+from daybook.Hints import Hints
 
 
 resources = '{}/resources'.format(os.path.dirname(__file__))

@@ -13,7 +13,8 @@ from prettytable import PrettyTable
 
 import daybook.parser
 from daybook.config import add_config_args, do_first_time_setup, user_conf
-from daybook.Ledger import Ledger, Hints
+from daybook.Hints import Hints
+from daybook.Ledger import Ledger
 
 
 def get_start_end(start, end, range_):
@@ -150,83 +151,97 @@ def do_expense(server, args):
     print(pt, '\n')
 
 
-def get_csv_paths(rootdir):
-    """ Return paths to all CSVs from root.
-
-    Args:
-        rootdir: Root directory which will be recursively searched for CSVs.
+def readdir_(d):
+    """ Same as OS. walk executed at the first level.
 
     Returns:
-        A list of all csv paths.
+        A 3-tuple. First entry is the root (d), second is a list of all
+        directory entries within d, and the third is a list of names of
+        regular files.
     """
-    csvs = []
-    for root, dirs, files in os.walk(rootdir):
-        csvs.extend(['{}/{}'.format(root, f) for f in files if '.csv' in f])
-    return csvs
+    d = d.rstrip(os.path.sep)
+    if not os.path.isdir(d):
+        raise ValueError('{} is not a directory.'.format(d))
+
+    for root, dirs, files in os.walk(d):
+        return root, dirs, files
+
+
+def group_csvs(root, hints=None):
+    """ Return mapping from dirs to csv paths and hints files.
+
+    If a directory is provided, then that directory is searched recursively
+    for csvs. CSVs will be assigned the hints file of the previous depth
+    unless another one exists at their level.
+
+    If a regular file was provided instead, then a hints file is searched
+    within that file's directory and the two are paired and returned in
+    a list of len 1.
+
+    Args:
+        root: Root directory which will be recursively searched for CSVs.
+        hints: The orignal caller should keep this as None.
+
+    Returns:
+        A list of dicts. The 'csvs' field contains a list of csvs
+        and the 'hints' field is a corresponding Hints reference.
+    """
+    ret = []
+
+    if not os.path.exists(root):
+        raise FileNotFoundError('{} does not exist.'.format(root))
+
+    if os.path.isdir(root):
+        root, dirs, files = readdir_(root)
+        csvs = ['{}/{}'.format(root, f) for f in files if f.endswith('.csv')]
+        hints = Hints('{}/hints'.format(root)) if 'hints' in files else hints
+        ret.append({'csvs': csvs, 'hints': hints})
+
+        for d in dirs:
+            ret.extend(group_csvs('{}/{}'.format(root, d), hints))
+
+    elif os.path.isfile(root):
+        pardir = os.path.dirname(root)
+        if not pardir:
+            pardir = '.'
+        hints_p = '{}/{}'.format(pardir, 'hints')
+        hints = Hints(hints_p) if os.path.isfile(hints_p) else None
+        ret.append({'csvs': [root], 'hints': hints})
+
+    else:
+        raise ValueError('{} is not a regular file or directory.'.format(root))
+
+    return ret
 
 
 def do_load(server, args):
     """ Load a local ledger with CSVs and dump to daybookd.
     """
-    csvs = []
-    hints_p = ''
-    hints = None
+    levels = []
     if args.csv:
-        if args.hints:
-            hints_p = args.hints
-
-        try:
-            hints = Hints(hints=hints_p)
-        except Exception as e:
-            print('ERROR: "{}" is not a valid hints file. {}'.format(hints_p, e))
-            sys.exit(1)
-
         for csv in args.csv:
-            if not os.path.exists(csv):
-                print('ERROR: {} does not exist.'.format(csv))
+            try:
+                levels.extend(group_csvs(csv))
+            except (FileNotFoundError, ValueError) as e:
+                print(e)
                 sys.exit(1)
-            elif os.path.isfile(csv):
-                csvs.append(csv)
-            elif os.path.isdir(csv):
-                csvs.extend(get_csv_paths(csv))
-            else:
-                print('ERROR: {} is not a regular file or dir.'.format(csv))
-                sys.exit(1)
-
-        if not csvs:
-            print('ERROR: No CSVs found in specified locations.')
-            return
     else:
-        # find all csvs in ledger_root if no csvs provided.
         if not args.ledger_root:
             print(
                 'ERROR: No ledger_root specified on '
                 'command-line or in {}'.format(args.config))
             sys.exit(1)
 
-        csvs = get_csv_paths(args.ledger_root)
+        levels = group_csvs(args.ledger_root)
 
-        # verify hints file before verifying provided csv.
-        if args.hints:
-            hints_p = args.hints
-        else:
-            hints_p = '{}/hints'.format(args.ledger_root)
-            if not os.path.exists(hints_p):
-                hints_p = ''
+    if not levels:
+        print('ERROR: No CSVs found in specified locations.')
+        return
 
-        try:
-            hints = Hints(hints=hints_p)
-        except Exception as e:
-            print('ERROR: "{}" is not a valid hints file. {}.'.format(hints_p, e))
-            sys.exit(1)
-
-        if not csvs:
-            print('No CSVs found in {}.'.format(args.ledger_root))
-            return
-
-    ledger = Ledger(args.primary_currency, hints=hints)
+    ledger = Ledger(args.primary_currency)
     try:
-        ledger.loadCsvs(csvs)
+        for level in levels:
+            ledger.loadCsvs(level['csvs'], level['hints'])
         server.load(args.username, args.password, ledger.dump())
     except ValueError as ve:
         print(ve)

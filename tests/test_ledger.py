@@ -2,8 +2,9 @@ import os
 import unittest
 from datetime import datetime
 
-from daybook.Ledger import Ledger
 from daybook.Account import Account
+from daybook.Ledger import Ledger
+from daybook.Hints import Hints
 from daybook.Transaction import Transaction
 
 
@@ -16,8 +17,8 @@ class TestLedger(unittest.TestCase):
     def test_single_transaction(self):
         """ Verify correct behavior for single csv.
         """
-        ledger = Ledger(pcurr, hints='{}/hints'.format(resources))
-        ledger.loadCsv('{}/single.csv'.format(resources))
+        ledger = Ledger(pcurr)
+        ledger.loadCsv('{}/single.csv'.format(resources), Hints('{}/hints'.format(resources)))
 
         src = ledger.accounts['my-employer']
         dest = ledger.accounts['my-checking']
@@ -41,8 +42,8 @@ class TestLedger(unittest.TestCase):
     def test_hints_match(self):
         """ Verify that account names can be inferred from hints.
         """
-        ledger = Ledger(pcurr, hints='{}/hints'.format(resources))
-        ledger.loadCsv('{}/single-hints/my-checking.csv'.format(resources))
+        ledger = Ledger(pcurr)
+        ledger.loadCsv('{}/single-hints/my-checking.csv'.format(resources), Hints('{}/hints'.format(resources)))
 
         self.assertTrue('void' in ledger.accounts)
         self.assertTrue('my-checking' in ledger.accounts)
@@ -75,8 +76,8 @@ class TestLedger(unittest.TestCase):
         Transactions that contain 'this' as the account name should
         substitute the basename of the csv.
         """
-        ledger = Ledger(pcurr, hints='{}/hints'.format(resources))
-        ledger.loadCsv('{}/employer-payroll.csv'.format(resources))
+        ledger = Ledger(pcurr)
+        ledger.loadCsv('{}/employer-payroll.csv'.format(resources), Hints('{}/hints'.format(resources)))
 
         self.assertTrue('employer-payroll' in ledger.accounts)
 
@@ -89,8 +90,8 @@ class TestLedger(unittest.TestCase):
         """ Multiple transactions from a single csv should zero.
         """
 
-        ledger = Ledger(pcurr, hints='{}/hints'.format(resources))
-        ledger.loadCsv('{}/loan-payoff.csv'.format(resources))
+        ledger = Ledger(pcurr)
+        ledger.loadCsv('{}/loan-payoff.csv'.format(resources), Hints('{}/hints'.format(resources)))
 
         self.assertEqual(4, len(ledger.accounts))
         self.assertEqual(5, len(ledger.transactions))
