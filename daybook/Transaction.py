@@ -38,14 +38,12 @@ class Transaction:
     def __str__(self):
         """ Return transaction as a complete csv row.
         """
-        return '"{}","{} {} {}","{} {} {}","{}","{}","{}"'.format(
+        return '"{}","{}.{}","{}.{}","{}","{}","{}"'.format(
             self.date,
-            self.src.name,
             self.src.type,
-            ':'.join(self.src.tags),
-            self.dest.name,
+            self.src.name,
             self.dest.type,
-            ':'.join(self.dest.tags),
+            self.dest.name,
             self.amount,
             ':'.join(self.tags),
             self.notes)

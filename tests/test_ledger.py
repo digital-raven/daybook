@@ -2,10 +2,8 @@ import os
 import unittest
 from datetime import datetime
 
-from daybook.Account import Account
 from daybook.Ledger import Ledger
 from daybook.Hints import Hints
-from daybook.Transaction import Transaction
 
 
 pcurr = 'usd'

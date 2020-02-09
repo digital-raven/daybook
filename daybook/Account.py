@@ -24,9 +24,10 @@ class Account:
         'investment',
         'liability',
         'receivable',
+        'void',
     }
 
-    def __init__(self, name='', type_='asset', tags=None):
+    def __init__(self, name, type_):
         """ Initialize a new account instance.
 
         Mutable references are copied.
@@ -34,12 +35,10 @@ class Account:
         Args:
             name: Name of the account. Must contain no spaces.
             type: Type of account. Must be in Account.types.
-            tags: Container of tags for account. The account will
-                create a unique set internally.
         """
 
         if type_ not in Account.types:
-            raise ValueError('Account type must be in {}.'.format(
+            raise ValueError('Account type must be one of {}.'.format(
                 Account.types))
 
         if ' ' in name:
@@ -47,7 +46,6 @@ class Account:
 
         self.name = name
         self.type = type_
-        self.tags = {x for x in tags if x} if tags else set()
 
         # transaction references
         self.transactions = []
@@ -57,10 +55,6 @@ class Account:
 
         # most recent currency used in a transaction
         self.last_currency = None
-
-    def addTags(self, tags):
-        tmp = {x for x in tags if x}
-        self.tags.update(tmp)
 
     def addTransactions(self, transactions):
         """ Add transactions to this account.
@@ -91,46 +85,36 @@ class Account:
         self.transactions.append(t)
 
     @classmethod
-    def createFromList(cls, l_):
-        """ Parse a list to create a new account.
-
-            This list can match the following format...
-
-                name [type] [tag1[:tag2]]
-
-            If type is provided alongside tags, then type must come first.
-            Tags must be separated by colon
+    def createFromStr(cls, s):
+        """ Parse a str to create a new account.
 
         Args:
-            l_: The list containing Account information.
+            s: The string containing Account information.
 
         Returns:
             A new Account.
 
         Raises:
-            ValueError if the len was not in 1, 2, or 3, or if
-            the value read from the 'type' field was invalid.
+            ValueError if a valid account could not be created.
         """
+        s = s.strip()
+        if not s:
+            raise ValueError('No account information specified.')
 
+        l_ = [x for x in s.split('.') if x]
+
+        type_ = ''
         name = ''
-        type_ = 'asset'
-        tags = []
 
         if len(l_) == 1:
+            type_ = 'void'
             name = l_[0]
-        elif len(l_) == 2:
-            name = l_[0]
-            if l_[1] in Account.types:
-                type_ = l_[1]
-            else:
-                tags = l_[1].split(':')
-        elif len(l_) == 3:
-            name = l_[0]
-            type_ = l_[1]
-            tags = [x for x in l_[2].split(':') if x]
         else:
-            raise ValueError(
-                'Accounts must be created with 1, 2, or 3 '
-                'space-separated fields.')
+            if l_[0] in Account.types:
+                type_ = l_[0]
+                name = '.'.join(l_[1:])
+            else:
+                type_ = 'void'
+                name = '.'.join(l_)
 
-        return Account(name, type_, tags)
+        return Account(name, type_)

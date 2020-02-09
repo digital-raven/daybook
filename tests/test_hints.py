@@ -14,10 +14,10 @@ class TestHints(unittest.TestCase):
         """
         hints = Hints('{}/hints'.format(resources))
         self.assertEqual('', hints.suggest('micro'))
-        self.assertEqual('computer', hints.suggest('micro-center'))
-        self.assertEqual('gasoline', hints.suggest('BP BEYOND PETROLEUM #123'))
-        self.assertEqual('grocery', hints.suggest('WALMART Store'))
-        self.assertEqual('grocery', hints.suggest('TARGET #111::HI'))
+        self.assertEqual('expense.computer', hints.suggest('micro-center'))
+        self.assertEqual('expense.gasoline', hints.suggest('BP BEYOND PETROLEUM #123'))
+        self.assertEqual('expense.grocery', hints.suggest('WALMART Store'))
+        self.assertEqual('expense.grocery', hints.suggest('TARGET #111::HI'))
 
     def test_load_file_not_found(self):
         """ hints.load should raise FileNotFoundError if ini does not exist.
