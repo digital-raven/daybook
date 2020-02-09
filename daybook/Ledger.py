@@ -255,14 +255,15 @@ class Ledger:
         Returns:
             A reference to the transaction object within the ledger.
         """
+
+        # add copies of the accounts and update t.
+        t.src = self.addAccount(t.src)
+        t.dest = self.addAccount(t.dest)
+
         if t not in self.unique_transactions:
 
             # create our own copy
             t = Transaction(t.date, t.src, t.dest, t.amount, t.tags, t.notes)
-
-            # add copies of the accounts and update t.
-            t.src = self.addAccount(t.src)
-            t.dest = self.addAccount(t.dest)
 
             # commit the transaction
             self.transactions.append(t)
@@ -291,19 +292,36 @@ class Ledger:
         Raises:
             ValueError: No valid account could be created from s.
         """
-        s = s or 'void'
+        s = s.strip() or 'void.void'
+        account = None
 
-        l_ = [x for x in s.split(' ') if x]
+        try:
+            account = Account.createFromStr(s)
+        except ValueError:
+            if hints:
+                suggestion = hints.suggest(s)
+                if not suggestion:
+                    raise ValueError('No suggestion for "{}"'.format(s))
 
-        if l_[0] == 'this':
-            l_[0] = thisname
+                try:
+                    account = Account.createFromStr(suggestion)
+                    return account
+                except ValueError as ve:
+                    raise ValueError(
+                        '"{}" generated the suggestion "{}", '
+                        'which is invalid: {}.'.format(s, suggestion, ve))
+            else:
+                raise
 
-        if hints and l_[0] not in self.accounts:
-            suggestion = hints.suggest(s)
+        if account.name == 'this':
+            account.name = thisname
+
+        if hints and account.name not in self.accounts:
+            suggestion = hints.suggest(account.name)
             if suggestion:
-                l_ = [suggestion]
+                account = Account.createFromStr(suggestion)
 
-        return Account.createFromList(l_)
+        return account
 
     def addAccount(self, account):
         """ Add an account to this ledger.
@@ -325,11 +343,10 @@ class Ledger:
             A reference to the account added/modified within this ledger.
         """
         if account.name in self.accounts:
-            self.accounts[account.name].addTags(account.tags)
+            if self.accounts[account.name].type == 'void':
+                self.accounts[account.name].type = account.type
+
         else:
-            self.accounts[account.name] = Account(
-                account.name,
-                account.type,
-                account.tags)
+            self.accounts[account.name] = Account(account.name, account.type)
 
         return self.accounts[account.name]

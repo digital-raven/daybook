@@ -29,11 +29,6 @@ ledger = Ledger(primary_currency='dont-care')
 login = Login('', '')
 
 
-# helper funcs for filter_transactions
-def get_all_tags(t):
-    return t.tags.union(t.src.tags.union(t.dest.tags))
-
-
 def in_start(start, t):
     return not start or start <= t.date
 
@@ -56,7 +51,7 @@ def in_types(types, t):
 
 
 def in_tags(tags, t):
-    return not tags or len(tags.intersection(get_all_tags(t))) > 0
+    return not tags or len(tags.intersection(t.tags)) > 0
 
 
 def filter_transaction(t, start, end, accounts, currencies, types, tags):

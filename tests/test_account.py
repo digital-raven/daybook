@@ -12,26 +12,10 @@ amount = Amount('jpy', 10, 'jpy', 10)
 
 class TestAccount(unittest.TestCase):
 
-    def test_add_redundant_tag_creation(self):
-        """ Account tags should be unique on creation.
-        """
-        a = Account('name', 'asset', ['tag1', 'tag1', 'tag2'])
-        utags = [x for x in a.tags if x == 'tag1']
-        self.assertEqual(1, len(utags))
-
-    def test_add_redundant_tags(self):
-        """ addTags should produce a list of unique tags.
-        """
-        a = Account('name', 'asset', ['tag1', 'tag1', 'tag2'])
-        a.addTags('tag1')
-        a.addTags(['tag1', 'tag1'])
-        utags = [x for x in a.tags if x == 'tag1']
-        self.assertEqual(1, len(utags))
-
     def test_balance_zeroes_with_self(self):
         """ An account with transactions only with itself should zero
         """
-        a = Account('name')
+        a = Account('name', 'asset')
         t = []
         for i in range(1, 10):
             t.append(Transaction(dateparser.parse('today'), a, a, amount))
@@ -39,51 +23,36 @@ class TestAccount(unittest.TestCase):
         a.addTransactions(t)
         self.assertEqual(0, a.balances['jpy'])
 
-    def test_create_from_list_zero(self):
-        """ An account created from list 0 should raise ValueError
+    def test_create_from_str_empty(self):
+        """ An account created empty string should raise ValueError
         """
         with self.assertRaises(ValueError):
-            Account.createFromList([])
+            Account.createFromStr('')
 
-    def test_create_from_list_one(self):
-        """ An account created from list with len 1 should only have a name.
+    def test_create_from_str_one(self):
+        """ A string with no type should default to type void.
         """
-        a = Account.createFromList(['name'])
+        a = Account.createFromStr('name')
+        self.assertEqual('name', a.name)
+        self.assertEqual('void', a.type)
+
+    def test_create_from_str_two(self):
+        """ A string can specify a type and name.
+        """
+        a = Account.createFromStr('asset.name')
         self.assertEqual('name', a.name)
         self.assertEqual('asset', a.type)
-        self.assertTrue(not a.tags)
 
-    def test_create_from_list_two(self):
-        """ An account created from list with len 2 can have type or tags.
-        """
-        a = Account.createFromList(['name:asdf', 'tag1:tag2'])
-        self.assertEqual('name:asdf', a.name)
-        self.assertEqual('asset', a.type)
-        self.assertEqual({'tag1', 'tag2'}, a.tags)
-
-        a = Account.createFromList(['name', 'liability'])
-        self.assertEqual('name', a.name)
-        self.assertEqual('liability', a.type)
-        self.assertTrue(not a.tags)
-
-    def test_create_from_list_three(self):
-        """ An account created from list 3 should have name, type, and tags.
-        """
-        a = Account.createFromList(['name', 'liability', 'tag1:tag2'])
-        self.assertEqual('name', a.name)
-        self.assertEqual('liability', a.type)
-        self.assertEqual({'tag1', 'tag2'}, a.tags)
-
-    def test_create_from_list_four(self):
-        """ An account created from list 4 should raise ValueError
+    def test_create_from_str_spaces(self):
+        """ An account name cannot contain spaces.
         """
         with self.assertRaises(ValueError):
-            Account.createFromList(['name', 'expense', 't1:t2', 'extra'])
+            Account.createFromStr('asset.ihave spaces')
 
     def test_add_transaction(self):
         """ Test adding a single transaction to an account.
         """
-        a = Account('a')
+        a = Account('a', 'asset')
         t = Transaction(dateparser.parse('today'), a, a, amount)
         a.addTransaction(t)
         self.assertEqual(0, a.balances['jpy'])
@@ -92,8 +61,8 @@ class TestAccount(unittest.TestCase):
     def test_add_transaction_not_me(self):
         """ Accounts should raise ValueError if not in the transaction
         """
-        a = Account('a')
-        b = Account('b')
+        a = Account('a', 'asset')
+        b = Account('b', 'asset')
         t = Transaction(dateparser.parse('today'), b, b, amount)
 
         with self.assertRaises(ValueError):
@@ -102,8 +71,8 @@ class TestAccount(unittest.TestCase):
     def test_balance_between_asset_accounts(self):
         """ Asset accounts should transfer money to each other and zero.
         """
-        a = Account('a')
-        b = Account('b')
+        a = Account('a', 'asset')
+        b = Account('b', 'asset')
         t = []
         for i in range(1, 10):
             t.append(Transaction(dateparser.parse('today'), a, b, amount))
@@ -117,7 +86,7 @@ class TestAccount(unittest.TestCase):
     def test_balance_liability_payoff(self):
         """ Verify asset account's ability to pay off debt
         """
-        a = Account('a')
+        a = Account('a', 'asset')
         liab = Account('l', 'liability')
         void = Account('void', 'asset')
 
@@ -137,8 +106,8 @@ class TestAccount(unittest.TestCase):
     def test_balance_rounding(self):
         """ Very small numbers should not fail balance tests.
         """
-        a = Account('a')
-        b = Account('b')
+        a = Account('a', 'asset')
+        b = Account('b', 'asset')
 
         x = Amount('jpy', 3.33, 'jpy', 3.33)
         y = Amount('jpy', 4.32, 'jpy', 4.32)
@@ -162,7 +131,7 @@ class TestAccount(unittest.TestCase):
     def test_self_trade(self):
         """ An account should be able to trade with itself.
         """
-        a = Account('a')
+        a = Account('a', 'asset')
         x = Amount('jpy', 3.33, 'usd', 10)
 
         t = Transaction(dateparser.parse('today'), a, a, x)

@@ -1,9 +1,9 @@
-gasoline =
+expense.gasoline =
     BP BEYOND PETROLEUM
     SUPER AMERICA
 
-grocery = aldi
+expense.grocery = aldi
     TARGET
     WALMART Store
 
-computer = micro-center
+expense.computer = micro-center
