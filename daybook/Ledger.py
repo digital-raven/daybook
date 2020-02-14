@@ -171,10 +171,12 @@ class Ledger:
                         # determine src and dest based on sign of first num.
                         try:
                             tmpamount = get_nums(row['amount'])[0]
+                        except KeyError:
+                            tmpamount = 0
                         except IndexError:
                             raise ValueError('No quantities in "amount" field')
 
-                        if tmpamount < 0:
+                        if tmpamount <= 0:
                             src = self.suggestAccount('this', thisname, hints)
                             dest = target
                         else:
@@ -201,8 +203,11 @@ class Ledger:
                 else:
                     suggested_dest = self.primary_currency
 
-                amount = Amount.createFromStr(
-                    row['amount'], suggested_src, suggested_dest)
+                try:
+                    amount = Amount.createFromStr(
+                        row['amount'], suggested_src, suggested_dest)
+                except KeyError:
+                    amount = Amount(suggested_src, 0, suggested_dest, 0)
 
                 tags = []
                 if 'tags' in row:
