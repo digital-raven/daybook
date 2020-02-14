@@ -232,6 +232,32 @@ class TestLedger(unittest.TestCase):
         self.assertEqual(-10, ledger.accounts['checking'].balances['usd'])
         self.assertEqual(10, ledger.accounts['void'].balances['usd'])
 
+    def test_no_amount_field(self):
+        """ The absence of an 'amount' field should default to 0 for all.
+
+        Useful for creating a bunch of empty accounts. This will also create
+        an account called 'accounts'.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,target\n'
+            'today,checking\n'
+            'today,liability.car-loan\n')
+
+        # This kind of data would likely come from accounts.csv.
+        ledger.load(lines, thisname='accounts')
+
+        self.assertEqual('void', ledger.accounts['accounts'].type)
+        self.assertEqual('void', ledger.accounts['checking'].type)
+        self.assertEqual('liability', ledger.accounts['car-loan'].type)
+
+        self.assertEqual(2, len(ledger.transactions))
+        self.assertEqual(3, len(ledger.accounts))
+        for t in ledger.transactions:
+            self.assertEqual('accounts', t.src.name)
+            self.assertEqual(0, t.src.balances['usd'])
+            self.assertEqual(0, t.dest.balances['usd'])
+
 
 if __name__ == '__main__':
     unittest.main()
