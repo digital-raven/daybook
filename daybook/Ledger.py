@@ -77,7 +77,7 @@ class Ledger:
         """
         return [t for t in self.transactions if func(t)]
 
-    def loadCsvs(self, csvfiles, hints=None):
+    def loadCsvs(self, csvfiles, hints=None, skipinvals=False):
         """ Load ledger from multiple CSVs.
 
         Args:
@@ -89,9 +89,9 @@ class Ledger:
         Raises:
             See loadCsv.
         """
-        return [t for f in csvfiles for t in self.loadCsv(f, hints)]
+        return [t for f in csvfiles for t in self.loadCsv(f, hints, skipinvals)]
 
-    def loadCsv(self, csvfile, hints=None):
+    def loadCsv(self, csvfile, hints=None, skipinvals=False):
         """ Load ledger from a sincle CSV.
 
         Args:
@@ -107,11 +107,11 @@ class Ledger:
         thisname = os.path.splitext(os.path.basename(csvfile))[0]
         with open(csvfile, 'r') as f:
             try:
-                return self.load(f, thisname, hints)
+                return self.load(f, thisname, hints, skipinvals)
             except ValueError as ve:
                 raise ValueError('CSV {}: {}'.format(csvfile, ve))
 
-    def load(self, lines, thisname='this', hints=None):
+    def load(self, lines, thisname='this', hints=None, skipinvals=False):
         """ Loads transactions into this ledger from csv-lines.
 
         No transactions will be committed to the ledger if any line
@@ -122,6 +122,7 @@ class Ledger:
                 headings 'date,src,dest,amount,tags,notes'.
             thisname: Name to use in case an account is named 'this'.
             hints: Hints reference to help with accont creation.
+            skipinvals: Silently pass lines deemed invalid.
 
         Returns:
             A list containing internal references to the new transactions.
@@ -211,7 +212,7 @@ class Ledger:
 
                 tags = []
                 if 'tags' in row:
-                    tags = [x for x in row['tags'].split(':') if x]
+                    tags = [x.strip() for x in row['tags'].split(':') if x]
 
                 # will raise ValueError if invalid.
                 t = Transaction(date, src, dest, amount, tags, notes)
@@ -220,8 +221,14 @@ class Ledger:
                 last_currencies[src.name] = amount.src_currency
                 last_currencies[dest.name] = amount.dest_currency
             except ValueError as ve:
+                if skipinvals:
+                    continue
+
                 raise ValueError('Line {}: {}'.format(line_num, ve))
             except KeyError:
+                if skipinvals:
+                    continue
+
                 raise ValueError('Line {}: Does not contain expected fields.'.format(line_num))
 
             newtrans.append(t)
