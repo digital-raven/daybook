@@ -51,7 +51,12 @@ def main():
 
     subcommand = getattr(subcommand, 'do_{}'.format(args.command))
 
-    subcommand(args)
+    try:
+        subcommand(args)
+    except KeyboardInterrupt:
+        print('Interrupt caught - closing.')
+
+    sys.exit(0)
 
 
 if __name__ == '__main__':
