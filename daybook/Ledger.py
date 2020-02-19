@@ -338,15 +338,14 @@ class Ledger:
     def addAccount(self, account):
         """ Add an account to this ledger.
 
-        If an account of matching name already exists, then the tags will
-        be appended, and type will be ignored.
+        If an account of matching name already exists, then its type
+        will be overwritten by the new entry if the existing type is
+        'void'. The transactions are not moved.
 
-        The way to use this function is
+        This function returns an internal reference to the account.
+        The proper way to call this function is...
 
             x = ledger.addAccount(x)
-
-        This is because the ledger creates a new internal reference using
-        the data in x. The transactions are not moved.
 
         Args:
             account: Account to add.
