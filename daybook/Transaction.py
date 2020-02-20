@@ -25,7 +25,7 @@ class Transaction:
         self.src = src
         self.dest = dest
         self.amount = copy.copy(amount)
-        self.tags = {x.strip() for x in tags if x} if tags else set()
+        self.tags = set(tags) if tags else set()
         self.notes = notes
 
         # this key information shouln't ever be modified.

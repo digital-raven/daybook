@@ -12,19 +12,6 @@ from daybook.Amount import Amount
 from daybook.Transaction import Transaction
 
 
-def get_nums(s):
-    """ Returns list of nums found within a string.
-    """
-    s = s.replace(':', ' ').split()
-    nums = []
-    for tok in s:
-        try:
-            nums.append(float(tok))
-        except ValueError:
-            pass
-    return nums
-
-
 class Ledger:
 
     def __init__(self, primary_currency):
@@ -111,7 +98,7 @@ class Ledger:
             except ValueError as ve:
                 raise ValueError('CSV {}: {}'.format(csvfile, ve))
 
-    def load(self, lines, thisname='this', hints=None, skipinvals=False):
+    def load(self, lines, thisname='void.void', hints=None, skipinvals=False):
         """ Loads transactions into this ledger from csv-lines.
 
         No transactions will be committed to the ledger if any line
@@ -128,8 +115,6 @@ class Ledger:
             A list containing internal references to the new transactions.
 
         Raises:
-            FileNotFoundError: The csv wasn't found.
-            PermissionError: The csv exists but could not be read.
             ValueError: A row from the CSV was invalid.
         """
         if type(lines) == str:
@@ -137,6 +122,8 @@ class Ledger:
 
         newtrans = []
         reader = csv.DictReader(lines)
+        if 'date' not in reader.fieldnames:
+            raise ValueError('No "date" fieldname found.')
 
         # keep track of currency suggestions within this spreadsheet.
         last_currencies = {}
@@ -160,59 +147,26 @@ class Ledger:
                 if 'dest' in row:
                     dest = self.suggestAccount(row['dest'], thisname, hints)
 
-                if (not src or not dest) and 'target' in row:
-                    target = self.suggestAccount(row['target'], thisname, hints)
-                    notes = notes or row['target']
-
-                    if src:
-                        dest = target
-                    elif dest:
-                        src = target
-                    else:
-                        # determine src and dest based on sign of first num.
-                        try:
-                            tmpamount = get_nums(row['amount'])[0]
-                        except KeyError:
-                            tmpamount = 0
-                        except IndexError:
-                            raise ValueError('No quantities in "amount" field')
-
-                        if tmpamount <= 0:
-                            src = self.suggestAccount('this', thisname, hints)
-                            dest = target
-                        else:
-                            src = target
-                            dest = self.suggestAccount('this', thisname, hints)
-
                 src = src or self.suggestAccount('this', thisname, hints)
                 dest = dest or self.suggestAccount('this', thisname, hints)
 
                 # determine what currencies to use and validate amount
-                suggested_src = ''
-                suggested_dest = ''
+                suggestion = ''
                 if src.name in last_currencies:
-                    suggested_src = last_currencies[src.name]
+                    suggestion = last_currencies[src.name]
                 elif src.name in self.accounts:
-                    suggested_src = self.accounts[src.name].last_currency
+                    suggestion = self.accounts[src.name].last_currency
                 else:
-                    suggested_src = self.primary_currency
-
-                if dest.name in last_currencies:
-                    suggested_dest = last_currencies[dest.name]
-                elif dest.name in self.accounts:
-                    suggested_dest = self.accounts[dest.name].last_currency
-                else:
-                    suggested_dest = self.primary_currency
+                    suggestion = self.primary_currency
 
                 try:
-                    amount = Amount.createFromStr(
-                        row['amount'], suggested_src, suggested_dest)
+                    amount = Amount.createFromStr(row['amount'], suggestion)
                 except KeyError:
-                    amount = Amount(suggested_src, 0, suggested_dest, 0)
+                    amount = Amount(suggestion, 0, suggestion, 0)
 
-                tags = []
-                if 'tags' in row:
-                    tags = [x.strip() for x in row['tags'].split(':') if x]
+                tags = set()
+                if 'tags' in row and row['tags']:
+                    tags = {x.strip() for x in row['tags'].split(':') if x.strip()}
 
                 # will raise ValueError if invalid.
                 t = Transaction(date, src, dest, amount, tags, notes)
@@ -225,11 +179,6 @@ class Ledger:
                     continue
 
                 raise ValueError('Line {}: {}'.format(line_num, ve))
-            except KeyError:
-                if skipinvals:
-                    continue
-
-                raise ValueError('Line {}: Does not contain expected fields.'.format(line_num))
 
             newtrans.append(t)
             line_num = line_num + 1
@@ -238,7 +187,7 @@ class Ledger:
         return self.addTransactions(newtrans)
 
     def addTransactions(self, transactions):
-        """ Add list of transactions
+        """ Add list of transactions.
 
         There will be no reference sharing - all mutable data are copied,
         and this ledger will create its own unique account references.
@@ -290,12 +239,12 @@ class Ledger:
             internal.addTags(t.tags)
             return internal
 
-    def suggestAccount(self, s, thisname='uncategorized', hints=None):
+    def suggestAccount(self, s, thisname='void.void', hints=None):
         """ Parse a string and create an account reference from it.
 
         Args:
             s: String from which a suggestion will be made.
-            thisname: Name to use for src or dest in case they're named 'this'.
+            thisname: Name to use for account in case it's named 'this'.
             hints: Hints reference to help with account creation.
 
         Returns:
@@ -306,32 +255,28 @@ class Ledger:
         """
         s = s.strip() or 'void.void'
         account = None
+        suggestion = ''
+
+        # this substitution
+        s = '.'.join([x if x != 'this' else thisname for x in s.split('.')])
+
+        if ' ' in s:
+            if hints:
+                suggestion = hints.suggest(s)
+
+            if not suggestion:
+                raise ValueError('No suggestion for "{}"'.format(s))
+
+            s = suggestion
 
         try:
             account = Account.createFromStr(s)
         except ValueError:
-            if hints:
-                suggestion = hints.suggest(s)
-                if not suggestion:
-                    raise ValueError('No suggestion for "{}"'.format(s))
-
-                try:
-                    account = Account.createFromStr(suggestion)
-                    return account
-                except ValueError as ve:
-                    raise ValueError(
-                        '"{}" generated the suggestion "{}", '
-                        'which is invalid: {}.'.format(s, suggestion, ve))
-            else:
-                raise
-
-        if account.name == 'this':
-            account.name = thisname
-
-        if hints and account.name not in self.accounts:
-            suggestion = hints.suggest(account.name)
             if suggestion:
-                account = Account.createFromStr(suggestion)
+                raise ValueError(
+                    '"{}" generated the suggestion "{}", '
+                    'which is invalid: {}.'.format(s, suggestion, ve))
+            raise
 
         return account
 

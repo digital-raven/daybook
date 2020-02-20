@@ -4,29 +4,38 @@
 import shlex
 
 
-def exception_counter(l_, func):
-    """ Returns how many elements of l_ raised in func.
+def _cast_list(l_):
+    """ Casts the references in l_ to two lists - floats and strs.
     """
-    i = 0
+    floats = []
+    strs = []
     for elem in l_:
         try:
-            func(elem)
-        except Exception as e:
-            i = i + 1
-    return i
+            x = float(elem)
+            floats.append(x)
+        except ValueError:
+            strs.append(elem)
+
+    return floats, strs
 
 
 class Amount:
     def __init__(self, src_currency, src_amount, dest_currency, dest_amount):
 
-        src_amount = abs(src_amount)
-        dest_amount = abs(dest_amount)
+        try:
+            src_amount = float(src_amount)
+            dest_amount = float(dest_amount)
+        except ValueError:
+            raise ValueError('Could not convert amount entries to floats.')
 
-        src_currency = src_currency.strip()
-        dest_currency = dest_currency.strip()
+        src_currency = src_currency
+        dest_currency = dest_currency
 
-        if src_currency == dest_currency and not src_amount == dest_amount:
-            raise ValueError('Uneven exchange.')
+        if src_amount * dest_amount > 0:
+            raise ValueError('One side has to lose while the other gains.')
+
+        if src_currency == dest_currency and src_amount != -dest_amount:
+            raise ValueError('Uneven exchange: {} and {}.'.format(src_amount, dest_amount))
 
         if type(src_currency) is not str or type(dest_currency) is not str:
             raise ValueError('Currencies must be strings.')
@@ -51,57 +60,35 @@ class Amount:
             and self.dest_amount == other.dest_amount)
 
     @classmethod
-    def _createFromStrHelper(cls, s):
-        src = [x for x in s.split(':') if x]
-        if not exception_counter(src, lambda x: float(x)) == 1:
-            raise ValueError('Invalid grouping')
-
-        if len(src) == 1:
-            currency = ''
-            amount = float(src[0])
-        elif len(src) == 2:
-            try:
-                currency = src[0]
-                amount = float(src[1])
-            except ValueError:
-                try:
-                    amount = float(src[0])
-                    currency = src[1]
-                except ValueError:
-                    raise ValueError('No amount provided in group')
-        else:
-            raise ValueError('Currencies cannot contain colons.')
-
-        return currency, amount
-
-    @classmethod
-    def createFromStr(cls, s, suggested_src, suggested_dest):
-        """ Create amount from string and suggested src and dest accounts.
-
-        The accounts are there to 'fill in the blanks' in case a src
-        or destination currency is not specified in s.
+    def createFromStr(cls, s, suggestion):
+        """ Create amount from string.
 
         The line is tokenized and examined for the following formats.
 
         single
-            10 => valid => src:10 dest:10
+            10 => suggestion:10 suggestion:-10
 
         double
-            10 usd => valid => usd:10 usd:10
-            usd 10 => valid => usd:10 usd:10
-            10 20 => valid => src:10 dest:20
-
-        triple
-            usd 10 20 => valid => usd:10 dest:20
-            10 20 usd => valid => src:10 usd:20
+            10 usd => usd:10 usd:-10
+            usd 10 => usd:10 usd:-10
 
         quadruple
-            10 20 usd mxn => valid
-            usd mxn 10 20 => valid
-            10 usd 20 mxn => valid
-            usd 10 mxn 20 => valid
-            usd 10 20 mxn => valid
-            usd 10 mxn 20 => valid
+            10 -20 usd mxn
+            usd mxn 10 -20
+            10 usd -20 mxn
+            usd 10 mxn -20
+            usd 10 -20 mxn
+            usd 10 mxn -20
+
+        Args:
+            s: The string to parse.
+            suggestion: Currency to use in case one couldn't be determined.
+
+        Returns:
+            New Amount instance.
+
+        Raises:
+            ValueError if the string couldn't be turned into a valid Amount.
         """
 
         scurr = None
@@ -109,93 +96,52 @@ class Amount:
         samount = None
         damount = None
 
-        if type(suggested_src) is not str or type(suggested_dest) is not str:
-            raise ValueError('Currencies must be strings.')
-
-        # split into non-blank tokens
-        toks = shlex.split(s)
-
-        # scrub out colons
-        ntoks = []
-        for tok in toks:
-            if ':' in tok:
-                c, a = Amount._createFromStrHelper(tok)
-                if ntoks:
-                    ntoks.extend([a, c])
-                else:
-                    ntoks.extend([c, a])
-            else:
-                ntoks.append(tok)
-        toks = ntoks
+        # scrub out colons and split into amounts and currencies.
+        toks = s.replace(':', ' ').split()
+        amounts, currencies = _cast_list(toks)
 
         # parse list
         if len(toks) == 1:
             try:
-                samount = float(toks[0])
-            except ValueError:
-                raise ValueError('No amounts provided for exchange')
+                samount = amounts[0]
+            except IndexError:
+                raise ValueError('No amount provided for exchange.')
 
-            damount = samount
-            scurr = suggested_src
-            dcurr = suggested_src
+            damount = -samount
+            scurr = suggestion
+            dcurr = scurr
+
         elif len(toks) == 2:
             try:
-                samount = float(toks[0])
-                damount = float(toks[1])
-                scurr = suggested_src
-                dcurr = suggested_dest
-            except ValueError:
-                try:
-                    samount = float(toks[0])
-                    scurr = toks[1]
-                    damount = samount
-                    dcurr = scurr
-                except ValueError:
-                    try:
-                        scurr = toks[0]
-                        samount = float(toks[1])
-                        damount = samount
-                        dcurr = scurr
-                    except ValueError:
-                        raise ValueError('No amounts provided for exchange')
-        elif len(toks) == 3:
-
-            nex = exception_counter(toks, lambda x: float(x))
-            if not nex == 1:
-                raise ValueError('Too many currencies provided')
+                samount = amounts[0]
+            except IndexError:
+                raise ValueError('No amount provided for exchange.')
 
             try:
-                samount = float(toks[0])
-                damount = float(toks[1])
-                dcurr = toks[2]
-                scurr = suggested_src
-            except ValueError:
-                try:
-                    scurr = toks[0]
-                    samount = float(toks[1])
-                    damount = float(toks[2])
-                    dcurr = suggested_dest
-                except ValueError:
-                    raise ValueError('This was a bad')
+                scurr = currencies[0]
+            except IndexError:
+                raise ValueError('No currency provided for exchange.')
+
+            damount = -samount
+            dcurr = scurr
+
         elif len(toks) == 4:
-            nex = exception_counter(toks, lambda x: float(x))
-            if not nex == 2:
-                raise ValueError('Too many currencies provided')
+            try:
+                samount = amounts[0]
+                damount = amounts[1]
+            except IndexError:
+                raise ValueError('Not enough amounts specified.')
 
-            amounts = []
-            currencies = []
+            try:
+                scurr = currencies[0]
+                dcurr = currencies[1]
+            except IndexError:
+                raise ValueError('Not enough currency types specified.')
 
-            for tok in toks:
-                try:
-                    x = float(tok)
-                    amounts.append(x)
-                except ValueError:
-                    currencies.append(tok)
-
-            samount = amounts[0]
-            damount = amounts[1]
-            scurr = currencies[0]
-            dcurr = currencies[1]
+        elif len(toks) == 3:
+            raise ValueError('Odd "amount" entry - too many currencies or amounts.')
+        elif not toks:
+            raise ValueError('Empty string provided for amount.')
         else:
             raise ValueError('Invalid amount - too many entries')
 

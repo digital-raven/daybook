@@ -57,7 +57,6 @@ def create_client_parser():
     group.add_argument('--date', help='The date on which the transactino took place.')
     group.add_argument('--src', help='Name of the source account.')
     group.add_argument('--dest', help='Name of the destintion account.')
-    group.add_argument('--target', help='Name of the target account.')
     group.add_argument('--amount', help='The amount and currencies sent and received to / from each account.')
     group.add_argument('--tags', help='Tags for the transaction. Enter like "tag1:tag2:tag3"')
     group.add_argument('--notes', help='Free-form notes on the transaction.')

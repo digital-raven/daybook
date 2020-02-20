@@ -12,6 +12,37 @@ resources = '{}/resources'.format(os.path.dirname(__file__))
 
 class TestLedger(unittest.TestCase):
 
+    def test_date_only(self):
+        """ Date should be the only required field for a transaction.
+
+        The transaction should be created like this...
+
+            date,src,dest,amount,tags,notes
+            date,void.void,void.void,0:pcurr 0:pcurr,,,
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date\n'
+            '03-17-2016 21:02\n')
+        ledger.load(lines)
+        self.assertEqual(1, len(ledger.accounts))
+        self.assertEqual(1, len(ledger.transactions))
+
+        t = ledger.transactions[0]
+
+        self.assertEqual(datetime(2016, 3, 17, 21, 2, 0), t.date)
+        self.assertEqual('void', t.src.name)
+        self.assertEqual('void', t.src.type)
+        self.assertEqual(t.src, t.dest)
+        self.assertEqual(0, t.src.balances[pcurr])
+        self.assertEqual(0, t.dest.balances[pcurr])
+        self.assertEqual(0, t.amount.src_amount)
+        self.assertEqual(0, t.amount.dest_amount)
+        self.assertEqual(pcurr, t.amount.src_currency)
+        self.assertEqual(pcurr, t.amount.dest_currency)
+        self.assertEqual(set(), t.tags)
+        self.assertEqual('', t.notes)
+
     def test_single_transaction(self):
         """ Verify correct behavior for single csv.
         """
@@ -122,6 +153,10 @@ class TestLedger(unittest.TestCase):
         self.assertEqual(4, len(ledger.accounts))
         self.assertEqual(4, len(ledger.transactions))
 
+        self.assertEqual('liability', ledger.accounts['car-loan'].type)
+        self.assertEqual('asset', ledger.accounts['my-checking'].type)
+        self.assertEqual('income', ledger.accounts['my-company-payroll'].type)
+
         self.assertEqual(0, ledger.accounts['car-loan'].balances['usd'])
         self.assertEqual(
             100, ledger.accounts['my-checking'].balances['usd'])
@@ -164,51 +199,50 @@ class TestLedger(unittest.TestCase):
 
         self.assertEqual(ledger1.dump(), ledger2.dump())
 
-    def test_target_direction_no_dest(self):
-        """ target implies dest if src is present.
+    def test_src_only(self):
+        """ If only src is provided, then dest should be thisname.
         """
         lines = (
-            'date,src,target,amount\n'
-            'today,checking,food,10')
+            'date,src,amount\n'
+            'today,checking,10')
         ledger = Ledger(pcurr)
-        ledger.load(lines)
-        self.assertEqual(10, ledger.accounts['food'].balances['usd'])
-        self.assertEqual(-10, ledger.accounts['checking'].balances['usd'])
+        ledger.load(lines, thisname='income.employer')
+        self.assertEqual(10, ledger.accounts['checking'].balances['usd'])
+        self.assertEqual(-10, ledger.accounts['employer'].balances['usd'])
 
-    def test_target_direction_no_src(self):
-        """ target implies src if dest is present.
+    def test_dest_only(self):
+        """ If only dest is provided, then src should be thisname.
         """
         lines = (
-            'date,dest,target,amount\n'
-            'today,dest,src,10')
-        ledger = Ledger(pcurr)
-        ledger.load(lines)
-        self.assertEqual(-10, ledger.accounts['src'].balances['usd'])
-        self.assertEqual(10, ledger.accounts['dest'].balances['usd'])
-
-    def test_target_only(self):
-        """ Sign determines direction if no src or dest.
-        """
-        lines = (
-            'date,target,amount\n'
-            'today,food,-10\n'
-            'today,saving,10')
+            'date,dest,amount\n'
+            'today,expense.grocery,-10')
         ledger = Ledger(pcurr)
         ledger.load(lines, thisname='checking')
-        self.assertEqual(0, ledger.accounts['checking'].balances['usd'])
-        self.assertEqual(10, ledger.accounts['food'].balances['usd'])
-        self.assertEqual(-10, ledger.accounts['saving'].balances['usd'])
+        self.assertEqual('void', ledger.accounts['checking'].type)
+        self.assertEqual(-10, ledger.accounts['checking'].balances['usd'])
+        self.assertEqual(10, ledger.accounts['grocery'].balances['usd'])
 
-    def test_no_src_dest_target(self):
-        """ 'this' should be used if no accounts specified.
+    def test_dest_only_4_amount_fields(self):
+        """ Dest and src should be able to handle different currencies.
+        """
+        lines = (
+            'date,dest,amount\n'
+            'today,expense.grocery,-10 usd 20 mxn')
+        ledger = Ledger(pcurr)
+        ledger.load(lines, thisname='asset.checking')
+        self.assertEqual(-10, ledger.accounts['checking'].balances['usd'])
+        self.assertEqual(20, ledger.accounts['grocery'].balances['mxn'])
+
+    def test_no_src_and_no_dest(self):
+        """ If neither src or dest are provided, then each should use thisname.
         """
         lines = (
             'date,amount\n'
-            'today,10 usd 40 shares')
+            'today,-10 usd 20 tsla')
         ledger = Ledger(pcurr)
-        ledger.load(lines, thisname='brokerage')
+        ledger.load(lines, thisname='asset.brokerage')
         self.assertEqual(-10, ledger.accounts['brokerage'].balances['usd'])
-        self.assertEqual(40, ledger.accounts['brokerage'].balances['shares'])
+        self.assertEqual(20, ledger.accounts['brokerage'].balances['tsla'])
 
     def test_empty_src_void(self):
         """ If the src entry is empty, then void should be used.
@@ -217,9 +251,9 @@ class TestLedger(unittest.TestCase):
             'date,src,amount\n'
             'today,,10')
         ledger = Ledger(pcurr)
-        ledger.load(lines, thisname='checking')
-        self.assertEqual(10, ledger.accounts['checking'].balances['usd'])
-        self.assertEqual(-10, ledger.accounts['void'].balances['usd'])
+        ledger.load(lines, thisname='asset.checking')
+        self.assertEqual(-10, ledger.accounts['checking'].balances['usd'])
+        self.assertEqual(10, ledger.accounts['void'].balances['usd'])
 
     def test_empty_dest_void(self):
         """ Same as above, but with dest.
@@ -229,8 +263,8 @@ class TestLedger(unittest.TestCase):
             'today,,10')
         ledger = Ledger(pcurr)
         ledger.load(lines, thisname='checking')
-        self.assertEqual(-10, ledger.accounts['checking'].balances['usd'])
-        self.assertEqual(10, ledger.accounts['void'].balances['usd'])
+        self.assertEqual(10, ledger.accounts['checking'].balances['usd'])
+        self.assertEqual(-10, ledger.accounts['void'].balances['usd'])
 
     def test_no_amount_field(self):
         """ The absence of an 'amount' field should default to 0 for all.
@@ -240,14 +274,13 @@ class TestLedger(unittest.TestCase):
         """
         ledger = Ledger(pcurr)
         lines = (
-            'date,target\n'
+            'date,dest\n'
             'today,checking\n'
             'today,liability.car-loan\n')
 
         # This kind of data would likely come from accounts.csv.
         ledger.load(lines, thisname='accounts')
 
-        self.assertEqual('void', ledger.accounts['accounts'].type)
         self.assertEqual('void', ledger.accounts['checking'].type)
         self.assertEqual('liability', ledger.accounts['car-loan'].type)
 
@@ -257,6 +290,101 @@ class TestLedger(unittest.TestCase):
             self.assertEqual('accounts', t.src.name)
             self.assertEqual(0, t.src.balances['usd'])
             self.assertEqual(0, t.dest.balances['usd'])
+
+    def test_thisname_type_assignment(self):
+        """ thisname should be capable of containing a type.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,dest\n'
+            'today,this\n')
+        ledger.load(lines, thisname='income.employer')
+        self.assertEqual(1, len(ledger.accounts))
+        self.assertEqual('income', ledger.accounts['employer'].type)
+
+    def test_thisname_notype(self):
+        """ thisname should replace instances of 'this' between dots.
+
+        The following logic creates a transaction from
+
+            void.checking => asset.checking.checking
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,dest\n'
+            'today,asset.this.this\n')
+        ledger.load(lines, thisname='checking')
+        self.assertEqual(2, len(ledger.accounts))
+        self.assertEqual('void', ledger.accounts['checking'].type)
+        self.assertEqual('asset', ledger.accounts['checking.checking'].type)
+
+    def test_thisname_no_dots(self):
+        """ thisname should just blindly replace instances of 'this'
+
+        The following logic creates a transaction from
+
+            void.checking => asset.ethis
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,dest\n'
+            'today,asset.ethis\n')
+        ledger.load(lines, thisname='checking')
+        self.assertEqual(2, len(ledger.accounts))
+        self.assertEqual('void', ledger.accounts['checking'].type)
+        self.assertEqual('asset', ledger.accounts['ethis'].type)
+
+
+    def test_overwrite_void(self):
+        """ "Concrete" types should overwrite void on ledger entry.
+        """
+        ledger = Ledger(pcurr)
+        lines1 = (
+            'date,dest\n'
+            'today,checking\n')
+
+        lines2 = (
+            'date,dest\n'
+            'today,asset.checking\n')
+        ledger.load(lines1)
+        self.assertEqual('void', ledger.accounts['checking'].type)
+
+        ledger.load(lines2)
+        self.assertEqual('asset', ledger.accounts['checking'].type)
+
+    def test_void_cant_overwrite(self):
+        """ "Void" shouldn't be capable of overwriting an existing type.
+        """
+        ledger = Ledger(pcurr)
+        lines1 = (
+            'date,dest\n'
+            'today,asset.checking\n')
+
+        lines2 = (
+            'date,dest\n'
+            'today,void.checking\n')
+        ledger.load(lines1)
+        self.assertEqual('asset', ledger.accounts['checking'].type)
+
+        ledger.load(lines2)
+        self.assertEqual('asset', ledger.accounts['checking'].type)
+
+    def test_ignore_new_types(self):
+        """ Types served on first-come-first-served basis.
+        """
+        ledger = Ledger(pcurr)
+        lines1 = (
+            'date,dest\n'
+            'today,asset.checking\n')
+
+        lines2 = (
+            'date,dest\n'
+            'today,income.checking\n')
+        ledger.load(lines1)
+        self.assertEqual('asset', ledger.accounts['checking'].type)
+
+        ledger.load(lines2)
+        self.assertEqual('asset', ledger.accounts['checking'].type)
 
 
 if __name__ == '__main__':
