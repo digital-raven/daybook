@@ -44,6 +44,9 @@ class Account:
         if ' ' in name:
             raise ValueError('Account names may not contain spaces.')
 
+        if not name:
+            raise ValueError('Account name may not be empty.')
+
         self.name = name
         self.type = type_
 
@@ -76,7 +79,7 @@ class Account:
         dcurr = t.amount.dest_currency
 
         if self is t.src:
-            self.balances[scurr] = self.balances[scurr] - t.amount.src_amount
+            self.balances[scurr] = self.balances[scurr] + t.amount.src_amount
             self.last_currency = scurr
         if self is t.dest:
             self.balances[dcurr] = self.balances[dcurr] + t.amount.dest_amount
@@ -101,12 +104,14 @@ class Account:
         if not s:
             raise ValueError('No account information specified.')
 
-        l_ = [x for x in s.split('.') if x]
+        l_ = [x.strip() for x in s.split('.') if x.strip()]
 
         type_ = ''
         name = ''
 
-        if len(l_) == 1:
+        if not l_:
+            raise ValueError('No account information specified.')
+        elif len(l_) == 1:
             type_ = 'void'
             name = l_[0]
         else:

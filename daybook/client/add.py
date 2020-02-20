@@ -64,7 +64,7 @@ def do_add(args):
         currency_opts = currency_opts.union(account.balances.keys())
 
     if hints:
-        account_opts = account_opts.union(hints.hints.values())
+        account_opts = account_opts.union(hints.hints.keys())
 
     # create tag suggestions
     tag_opts = set()
@@ -85,13 +85,11 @@ def do_add(args):
 
             date = date.replace(microsecond=0)
             line.append('"{}"'.format(str(date)))
-        elif heading in ['src', 'dest', 'target']:
+        elif heading in ['src', 'dest']:
             if heading == 'src' and args.src:
                 acc = args.src
             elif heading == 'dest' and args.dest:
                 acc = args.dest
-            elif heading == 'target' and args.target:
-                acc = args.target
             else:
                 acc = autoinput('{} account (empty for "this"): '.format(heading), account_opts) or 'this'
 
@@ -106,6 +104,7 @@ def do_add(args):
                     sys.exit(1)
             else:
                 scurr = ledger.primary_currency
+                scurr = autoinput('Src currency (empty for {}): '.format(scurr), currency_opts) or scurr
 
                 try:
                     samount = autoinput('Src amount (empty for 0.0): ') or 0.0
@@ -114,16 +113,16 @@ def do_add(args):
                     print('ERROR: {} is not a number.'.format(samount))
                     sys.exit(1)
 
-                scurr = autoinput('Src currency (empty for {}): '.format(scurr), currency_opts) or scurr
+                dcurr = autoinput('Dest currency (optional): '.format(scurr), currency_opts) or scurr
 
-                try:
-                    damount = autoinput('Dest amount (empty for {}): '.format(samount)) or samount
-                    damount = float(damount)
-                except ValueError:
-                    print('ERROR: {} is not a number.'.format(damount))
-                    sys.exit(1)
-
-                dcurr = autoinput('Dest currency (empty for {}): '.format(scurr), currency_opts) or scurr
+                damount = -samount
+                if dcurr != scurr:
+                    try:
+                        damount = autoinput('Dest amount (empty for -{}): '.format(-samount)) or -samount
+                        damount = float(damount)
+                    except ValueError:
+                        print('ERROR: {} is not a number.'.format(damount))
+                        sys.exit(1)
 
                 try:
                     amount = Amount(scurr, samount, dcurr, damount)

@@ -7,7 +7,7 @@ from daybook.Amount import Amount
 from daybook.Transaction import Transaction
 
 
-amount = Amount('jpy', 10, 'jpy', 10)
+amount = Amount('jpy', -10, 'jpy', 10)
 
 
 class TestAccount(unittest.TestCase):
@@ -109,13 +109,13 @@ class TestAccount(unittest.TestCase):
         a = Account('a', 'asset')
         b = Account('b', 'asset')
 
-        x = Amount('jpy', 3.33, 'jpy', 3.33)
-        y = Amount('jpy', 4.32, 'jpy', 4.32)
-        z = Amount('jpy', 0.99, 'jpy', 0.99)
+        x = Amount('jpy', 3.33, 'jpy', -3.33)
+        y = Amount('jpy', 4.32, 'jpy', -4.32)
+        z = Amount('jpy', 0.99, 'jpy', -0.99)
 
         t = []
         t.append(Transaction(dateparser.parse('today'), a, b, x))
-        t.append(Transaction(dateparser.parse('today'), b, a, y))
+        t.append(Transaction(dateparser.parse('today'), a, b, y))
         t.append(Transaction(dateparser.parse('today'), a, b, z))
 
         a.addTransactions(t)
@@ -132,7 +132,7 @@ class TestAccount(unittest.TestCase):
         """ An account should be able to trade with itself.
         """
         a = Account('a', 'asset')
-        x = Amount('jpy', 3.33, 'usd', 10)
+        x = Amount('jpy', -3.33, 'usd', 10)
 
         t = Transaction(dateparser.parse('today'), a, a, x)
         a.addTransaction(t)
