@@ -29,10 +29,12 @@ class Hints:
         """
         d = colonconf.load(hints)
 
-        for key, value in d.items():
-            lines = [x for x in value.splitlines() if x]
-            for line in lines:
-                self.hints[line] = key
+        for k, v in d.items():
+            lines = [x.strip() for x in v.splitlines() if x.strip()]
+            if k not in self.hints:
+                self.hints[k] = lines
+            else:
+                self.hints[k].extend(lines)
 
     def suggest(self, s):
         """ Suggest an entry given a string.
@@ -41,15 +43,10 @@ class Hints:
             s: The string to search for within self.hints.
 
         Returns:
-            If s is an exact match, then that value is returned. If not, then
-            self.hints is searched for a key which contains s. If one is found,
-            then that value is returned. First-come only-served.
+            The key in hints for which a value was a substring of s.
         """
-        if s in self.hints:
-            return self.hints[s]
-
-        for key, value in self.hints.items():
-            if key in s:
-                return value
+        for k, v in self.hints.items():
+            if any([line in s for line in v]):
+                return k
 
         return ''
