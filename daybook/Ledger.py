@@ -253,12 +253,14 @@ class Ledger:
         Raises:
             ValueError: No valid account could be created from s.
         """
-        s = s.strip() or 'void.void'
+        s = s.strip()
+
         account = None
         suggestion = ''
 
         # this substitution
         s = '.'.join([x if x != 'this' else thisname for x in s.split('.')])
+        s = 'void.void' if s == 'void' else s
 
         if ' ' in s:
             if hints:
@@ -267,18 +269,14 @@ class Ledger:
             if not suggestion:
                 raise ValueError('No suggestion for "{}"'.format(s))
 
-            s = suggestion
-
-        try:
-            account = Account.createFromStr(s)
-        except ValueError:
-            if suggestion:
+            elif ' ' in suggestion:
                 raise ValueError(
                     '"{}" generated the suggestion "{}", '
                     'which is invalid: {}.'.format(s, suggestion, ve))
-            raise
 
-        return account
+            s = suggestion
+
+        return Account.createFromStr(s)
 
     def addAccount(self, account):
         """ Add an account to this ledger.

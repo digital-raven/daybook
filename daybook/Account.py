@@ -42,7 +42,7 @@ class Account:
                 Account.types))
 
         if ' ' in name:
-            raise ValueError('Account names may not contain spaces.')
+            raise ValueError('Account name {} contains a space.'.format(name))
 
         if not name:
             raise ValueError('Account name may not be empty.')
@@ -100,26 +100,18 @@ class Account:
         Raises:
             ValueError if a valid account could not be created.
         """
-        s = s.strip()
-        if not s:
-            raise ValueError('No account information specified.')
-
-        l_ = [x.strip() for x in s.split('.') if x.strip()]
+        l_ = [x for x in s.split('.') if x]
 
         type_ = ''
         name = ''
 
         if not l_:
             raise ValueError('No account information specified.')
-        elif len(l_) == 1:
-            type_ = 'void'
-            name = l_[0]
+        elif l_[0] in Account.types:
+            type_ = l_[0]
+            name = '.'.join(l_[1:])
         else:
-            if l_[0] in Account.types:
-                type_ = l_[0]
-                name = '.'.join(l_[1:])
-            else:
-                type_ = 'void'
-                name = '.'.join(l_)
+            type_ = 'void'
+            name = '.'.join(l_)
 
         return Account(name, type_)

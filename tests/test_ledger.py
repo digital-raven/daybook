@@ -219,6 +219,7 @@ class TestLedger(unittest.TestCase):
         ledger = Ledger(pcurr)
         ledger.load(lines, thisname='checking')
         self.assertEqual('void', ledger.accounts['checking'].type)
+        self.assertEqual('expense', ledger.accounts['grocery'].type)
         self.assertEqual(-10, ledger.accounts['checking'].balances['usd'])
         self.assertEqual(10, ledger.accounts['grocery'].balances['usd'])
 
@@ -245,15 +246,14 @@ class TestLedger(unittest.TestCase):
         self.assertEqual(20, ledger.accounts['brokerage'].balances['tsla'])
 
     def test_empty_src_void(self):
-        """ If the src entry is empty, then void should be used.
+        """ Load should raise if the src entry is empty.
         """
         lines = (
             'date,src,amount\n'
             'today,,10')
         ledger = Ledger(pcurr)
-        ledger.load(lines, thisname='asset.checking')
-        self.assertEqual(-10, ledger.accounts['checking'].balances['usd'])
-        self.assertEqual(10, ledger.accounts['void'].balances['usd'])
+        with self.assertRaises(ValueError):
+            ledger.load(lines, thisname='asset.checking')
 
     def test_empty_dest_void(self):
         """ Same as above, but with dest.
@@ -262,9 +262,8 @@ class TestLedger(unittest.TestCase):
             'date,dest,amount\n'
             'today,,10')
         ledger = Ledger(pcurr)
-        ledger.load(lines, thisname='checking')
-        self.assertEqual(10, ledger.accounts['checking'].balances['usd'])
-        self.assertEqual(-10, ledger.accounts['void'].balances['usd'])
+        with self.assertRaises(ValueError):
+            ledger.load(lines, thisname='checking')
 
     def test_no_amount_field(self):
         """ The absence of an 'amount' field should default to 0 for all.
@@ -334,23 +333,24 @@ class TestLedger(unittest.TestCase):
         self.assertEqual('void', ledger.accounts['checking'].type)
         self.assertEqual('asset', ledger.accounts['ethis'].type)
 
-
     def test_overwrite_void(self):
         """ "Concrete" types should overwrite void on ledger entry.
         """
         ledger = Ledger(pcurr)
         lines1 = (
-            'date,dest\n'
-            'today,checking\n')
+            'date,dest,amount\n'
+            'today,employer,10\n')
 
         lines2 = (
-            'date,dest\n'
-            'today,asset.checking\n')
-        ledger.load(lines1)
-        self.assertEqual('void', ledger.accounts['checking'].type)
+            'date,dest,amount\n'
+            'today,income.employer,20\n')
+        ledger.load(lines1, thisname='asset.checking')
+        self.assertEqual('void', ledger.accounts['employer'].type)
 
-        ledger.load(lines2)
-        self.assertEqual('asset', ledger.accounts['checking'].type)
+        ledger.load(lines2, thisname='asset.checking')
+        self.assertEqual('income', ledger.accounts['employer'].type)
+        self.assertEqual(-30, ledger.accounts['employer'].balances[pcurr])
+        self.assertEqual(30, ledger.accounts['checking'].balances[pcurr])
 
     def test_void_cant_overwrite(self):
         """ "Void" shouldn't be capable of overwriting an existing type.
@@ -385,6 +385,46 @@ class TestLedger(unittest.TestCase):
 
         ledger.load(lines2)
         self.assertEqual('asset', ledger.accounts['checking'].type)
+
+    def test_strip_account_names(self):
+        """ Extraneous spaces should not raise.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,dest\n'
+            'today,    asset.checking    \n')
+        ledger.load(lines)
+        self.assertEqual('asset', ledger.accounts['checking'].type)
+
+    def test_spaces_raise(self):
+        """ Spaces in an account name should raise.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,dest\n'
+            'today,asset. checking\n')
+        with self.assertRaises(ValueError):
+            ledger.load(lines)
+
+    def test_type_only_raise(self):
+        """ It should raise if only a type were provided.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,dest\n'
+            'today,asset\n')
+        with self.assertRaises(ValueError):
+            ledger.load(lines)
+
+    def test_void_only_is_allowed(self):
+        """ But an exception is made for 'void'.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,dest\n'
+            'today,void\n')
+        ledger.load(lines, thisname='asset.checking')
+        self.assertEqual('void', ledger.accounts['void'].type)
 
 
 if __name__ == '__main__':
