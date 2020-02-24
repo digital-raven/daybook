@@ -36,8 +36,12 @@ def do_add(args):
 
     if not os.path.exists(args.csv):
         print('Creating {}.'.format(args.csv))
-        with open(args.csv, 'w') as f:
-            f.write('date,src,dest,amount,tags,notes\n')
+        try:
+            with open(args.csv, 'w') as f:
+                f.write('date,src,dest,amount,tags,notes\n')
+        except FileNotFoundError:
+            print('ERROR: Could not create {}'.format(args.csv))
+            sys.exit(1)
 
     # check for existence of necessary headings
     headings = get_fieldnames(args.csv)

@@ -4,10 +4,11 @@ A few other subcommands use get_dump
 """
 
 import sys
-import xmlrpc.client
 
 import argcomplete
 import dateparser
+
+from daybook.client import client
 
 
 def _get_start_end(start, end, range_):
@@ -71,13 +72,10 @@ def get_dump(server, args):
 def do_dump(args):
     """ Retrieve transactions from daybookd as a raw csv string.
     """
-    url = 'http://{}:{}'.format(args.hostname, args.port)
-
     try:
-        server = xmlrpc.client.ServerProxy(url, allow_none=True)
-        server.ping()
-    except ConnectionRefusedError:
-        print('ERROR: No daybookd listening at {}'.format(url))
+        server = client.open(args.hostname, args.port)
+    except ConnectionRefusedError as e:
+        print(e)
         sys.exit(1)
 
     print(get_dump(server, args))

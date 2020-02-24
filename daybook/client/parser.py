@@ -61,6 +61,12 @@ def create_client_parser():
     group.add_argument('--tags', help='Tags for the transaction. Enter like "tag1:tag2:tag3"')
     group.add_argument('--notes', help='Free-form notes on the transaction.')
 
+    # balance command
+    sp = subparsers.add_parser(
+        'balance',
+        help='Print balances of accounts.',
+        parents=[filter_opts])
+
     # clear command
     sp = subparsers.add_parser(
         'clear',

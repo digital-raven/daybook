@@ -2,25 +2,23 @@
 """
 
 import sys
-import xmlrpc.client
 from collections import defaultdict
 
 import datetime
 from prettytable import PrettyTable
 
+from daybook.client import client
 from daybook.client.dump import get_dump
 from daybook.Ledger import Ledger
 
 
 def do_expense(args):
-
-    url = 'http://{}:{}'.format(args.hostname, args.port)
-
+    """ Entry point for the expense subcommand.
+    """
     try:
-        server = xmlrpc.client.ServerProxy(url, allow_none=True)
-        server.ping()
-    except ConnectionRefusedError:
-        print('ERROR: No daybookd listening at {}'.format(url))
+        server = client.open(args.hostname, args.port)
+    except ConnectionRefusedError as e:
+        print(e)
         sys.exit(1)
 
     # set start date for current month
