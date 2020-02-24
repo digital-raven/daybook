@@ -3,8 +3,8 @@
 
 import os
 import sys
-import xmlrpc.client
 
+from daybook.client import client
 from daybook.Hints import Hints
 from daybook.Ledger import Ledger
 
@@ -72,44 +72,53 @@ def group_csvs(root, hints=None):
     return ret
 
 
-def do_load(args):
-    """ Load a local ledger with CSVs and dump to daybookd.
+def local_load(args):
+    """ The 'leg work' function of load.
+
+    Useful to other subcommands if they want to create a local ledger
+    using the same logic as do_load.
+
+    Args:
+        args: Daybook args namespace. Should contain at least the same
+            attrs as do_load would expect.
+
+    Returns:
+        A ledger loaded from local CSVs.
+
+    Raises:
+        FileNotFoundError: Any of the CSVs didn't exist.
+        ValueError: Any of the CSVs contained an invalid entry, or no CSVs
+            could be decided upon based on the args.
     """
-    url = 'http://{}:{}'.format(args.hostname, args.port)
-
-    try:
-        server = xmlrpc.client.ServerProxy(url, allow_none=True)
-        server.ping()
-    except ConnectionRefusedError:
-        print('ERROR: No daybookd listening at {}'.format(url))
-        sys.exit(1)
-
     levels = []
     if args.csv:
         for csv in args.csv:
-            try:
-                levels.extend(group_csvs(csv))
-            except (FileNotFoundError, ValueError) as e:
-                print(e)
-                sys.exit(1)
+            levels.extend(group_csvs(csv))
     else:
         if not args.ledger_root:
-            print(
-                'ERROR: No ledger_root specified on '
-                'command-line or in {}'.format(args.config))
-            sys.exit(1)
+            raise ValueError('No CSVs specified and no ledger_root in {}'.format(args.config))
 
         levels = group_csvs(args.ledger_root)
 
     if not levels:
-        print('ERROR: No CSVs found in specified locations.')
+        raise ValueError('No CSVs found in specified locations.')
         return
 
     ledger = Ledger(args.primary_currency)
+    for level in levels:
+        ledger.loadCsvs(level['csvs'], level['hints'])
+
+    return ledger
+
+
+def do_load(args):
+    """ Load a local ledger with CSVs and dump to daybookd.
+    """
     try:
-        for level in levels:
-            ledger.loadCsvs(level['csvs'], level['hints'])
-        server.load(args.username, args.password, ledger.dump())
-    except ValueError as ve:
-        print(ve)
+        server = client.open(args.hostname, args.port)
+        ledger = local_load(args)
+    except (ConnectionRefusedError, FileNotFoundError, ValueError) as e:
+        print(e)
         sys.exit(1)
+
+    server.load(args.username, args.password, ledger.dump())
