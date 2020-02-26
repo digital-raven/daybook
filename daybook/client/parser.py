@@ -26,6 +26,7 @@ def create_client_parser():
     parser.add_argument(
         '--config',
         help='Select custom configuration file.')
+
     parser.add_argument(
         '--primary-currency',
         metavar='CURRENCY',

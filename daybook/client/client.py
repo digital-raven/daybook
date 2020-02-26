@@ -1,4 +1,4 @@
-""" functions for establishing a connection with daybookd
+""" Functions for establishing a connection with daybookd.
 """
 
 import xmlrpc.client

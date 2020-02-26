@@ -3,7 +3,7 @@
 Not elegant, but it saves a lot of copy paste for filter logic
 across the subcommands, and it's all under one file.
 
-If you're going to code a tumor, make it benign.    
+If you're going to code a tumor, make it benign.
 """
 
 import dateparser
@@ -61,7 +61,7 @@ def format_filter_args(args):
     accounts = set(args.accounts)
     currencies = set(args.currencies)
     types = set(args.types)
-    tags = set(args.tags.replace(' ', ':').split(':'))
+    tags = set(args.tags.replace(' ', ':').split(':')) if args.tags else set()
 
     return start, end, accounts, currencies, types, tags
 
