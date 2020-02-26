@@ -1,10 +1,10 @@
-""" load subcommand.
+""" daybook functions for loading a ledger.
 """
 
 import os
-import sys
 
 from daybook.client import client
+from daybook.client.filtering import create_filter_func, format_filter_args
 from daybook.Hints import Hints
 from daybook.Ledger import Ledger
 
@@ -19,7 +19,7 @@ def readdir_(d):
     """
     d = d.rstrip(os.path.sep)
     if not os.path.isdir(d):
-        raise ValueError('{} is not a directory.'.format(d))
+        raise ValueError('"{}" is not a directory.'.format(d))
 
     for root, dirs, files in os.walk(d):
         return root, dirs, files
@@ -72,11 +72,12 @@ def group_csvs(root, hints=None):
     return ret
 
 
-def local_load(args):
-    """ The 'leg work' function of load.
+def load_from_local(csvs, primary_currency):
+    """ Create a ledger from local csvs.
 
-    Useful to other subcommands if they want to create a local ledger
-    using the same logic as do_load.
+    The "CSVs" can be dirs or individual CSVs. Each will be paired with
+    a hints file via group_csvs and that hints file will be passed to
+    ledger.
 
     Args:
         args: Daybook args namespace. Should contain at least the same
@@ -87,38 +88,105 @@ def local_load(args):
 
     Raises:
         FileNotFoundError: Any of the CSVs didn't exist.
-        ValueError: Any of the CSVs contained an invalid entry, or no CSVs
-            could be decided upon based on the args.
+        ValueError: Any CSV contained an invalid entry, or no CSVs
+            could be found.
     """
     levels = []
-    if args.csvs:
-        for csv in args.csvs:
-            levels.extend(group_csvs(csv))
-    else:
-        if not args.ledger_root:
-            raise ValueError('No CSVs specified and no ledger_root in {}'.format(args.config))
 
-        levels = group_csvs(args.ledger_root)
+    for csv in csvs:
+        levels.extend(group_csvs(csv))
 
     if not levels:
         raise ValueError('No CSVs found in specified locations.')
-        return
 
-    ledger = Ledger(args.primary_currency)
+    ledger = Ledger(primary_currency)
     for level in levels:
         ledger.loadCsvs(level['csvs'], level['hints'])
 
     return ledger
 
 
-def do_load(args):
-    """ Load a local ledger with CSVs and dump to daybookd.
-    """
-    try:
-        server = client.open(args.hostname, args.port)
-        ledger = local_load(args)
-    except (ConnectionRefusedError, FileNotFoundError, ValueError) as e:
-        print(e)
-        sys.exit(1)
+def load_from_server(args):
+    """ Get filtered dump from server.
 
-    server.load(args.username, args.password, ledger.dump())
+    Only get dump involving transactions that match criterion in args.
+
+    Args:
+        args: ArgumentParser reference. Should have at least the parameters
+            outlined in the "filter opts" parsergroup.
+
+    Returns:
+        Dump from server as string of CSVs.
+
+    Raises:
+        ConnectionRefusedError: No daybookd listening.
+        ValueError: Invalid username or password sent to server, or port was
+            not numeric.
+    """
+
+    try:
+        int(args.port)
+    except ValueError:
+        raise ValueError('Port "{}" is not an integer.'.format(args.port))
+
+    # this can raise
+    server = client.open(args.hostname, args.port)
+
+    start, end, accounts, currencies, types, tags = format_filter_args(args)
+    username = args.username
+    password = args.password
+    accounts = ' '.join(accounts)
+    currencies = ' '.join(currencies)
+    types = ' '.join(types)
+    tags = ':'.join(tags)
+
+    ledger = Ledger(args.primary_currency)
+    dump = server.dump(
+        args.username, args.password,
+        start, end, accounts, currencies, types, tags)
+
+    if dump == 1:
+        raise ValueError('Invalid username or password specified.')
+
+    ledger.load(dump)
+
+    return ledger
+
+
+def load_from_args(args):
+    """ Choose from where to load based on args.
+
+    Loading order is Commandline CSVs, then daybookd, then ledger_root.
+
+    Args:
+        args: daybook args namespace
+
+    Returns:
+        A filtered Ledger.
+
+    Raises:
+        ConnectionRefusedError: No daybookd was listening.
+        FileNotFoundError: Any of the CSVs did not exist.
+        ValueError: Any of the CSVs contained an invalid entry or args didn't
+            contain enough information.
+    """
+    ledger = None
+
+    if args.csvs:
+        filter_ = create_filter_func(args)
+        ledger = load_from_local(args.csvs, args.primary_currency).filtered(filter_)
+
+    elif args.hostname and args.port:
+        ledger = load_from_server(args)
+
+    elif args.ledger_root:
+        print('INFO: No server info in config. Loading from ledger_root.')
+        filter_ = create_filter_func(args)
+        ledger = load_from_local([args.ledger_root], args.primary_currency).filtered(filter_)
+
+    else:
+        raise ValueError(
+            'No CSVs, server information, or default ledger_root specified. '
+            'Cannot load a ledger.')
+
+    return ledger

@@ -93,11 +93,20 @@ def main():
 
     args = add_config_args(args, args.config)
 
-    login.username = args.username
-    login.password = args.password
+    try:
+        login.username = args.username
+        login.password = args.password
+    except AttributeError:
+        print('ERROR: No username or password specified in "{}"'.format(args.config))
+        sys.exit(1)
+
+    try:
+        port = int(args.port)
+    except ValueError:
+        print('ERROR: Port "{}" is not an integer.'.format(args.port))
 
     # Create server
-    with SimpleXMLRPCServer(('localhost', int(args.port))) as server:
+    with SimpleXMLRPCServer(('localhost', port)) as server:
 
         server.register_function(clear, 'clear')
         server.register_function(dump, 'dump')

@@ -1,4 +1,4 @@
-""" clear subcommand.
+""" Entry point for the "clear" subcommand.
 """
 
 import sys
@@ -15,4 +15,8 @@ def do_clear(args):
         print(e)
         sys.exit(1)
 
-    server.clear(args.username, args.password)
+    status = server.clear(args.username, args.password)
+
+    if status == 1:
+        print('Invalid username or password specified.')
+        sys.exit(1)

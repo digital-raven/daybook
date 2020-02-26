@@ -34,20 +34,38 @@ def main():
     # fill in args with values from config.
     args = add_config_args(args, args.config)
 
-    if not args.hostname or not args.port:
-        print('ERROR: No hostname or port specified.')
-        sys.exit(1)
+    # need to fill in server info if it wasn't in the config.
+    try:
+        getattr(args, 'hostname')
+    except AttributeError:
+        setattr(args, 'hostname', '')
 
-    if not args.username or not args.password:
-        print('ERROR: No username or password specified.')
-        sys.exit(1)
+    try:
+        getattr(args, 'port')
+    except AttributeError:
+        setattr(args, 'port', '')
+
+    try:
+        getattr(args, 'username')
+    except AttributeError:
+        setattr(args, 'username', '')
+
+    try:
+        getattr(args, 'password')
+    except AttributeError:
+        setattr(args, 'username', '')
+
+    try:
+        getattr(args, 'ledger_root')
+    except AttributeError:
+        setattr(args, 'ledger_root', './')
 
     if not args.primary_currency:
         print('ERROR: No primary_currency in {}'.format(args.config))
         sys.exit(1)
 
     subcommand = importlib.import_module(
-        'daybook.client.{}'.format(args.command))
+        'daybook.client.cli.{}'.format(args.command))
 
     subcommand = getattr(subcommand, 'do_{}'.format(args.command))
 
