@@ -32,7 +32,8 @@ def do_add(args):
     hints = None
 
     if os.path.exists(args.csv) and not os.path.isfile(args.csv):
-        print('{} is not a regular file.'.format(args.csv))
+        print('ERROR: "{}" is not a regular file.'.format(args.csv))
+        sys.exit(1)
 
     if not os.path.exists(args.csv):
         print('Creating {}.'.format(args.csv))
@@ -122,10 +123,10 @@ def do_add(args):
                 damount = -samount
                 if dcurr != scurr:
                     try:
-                        damount = autoinput('Dest amount (empty for -{}): '.format(-samount)) or -samount
+                        damount = autoinput('Dest amount (empty for {}): '.format(-samount)) or -samount
                         damount = float(damount)
                     except ValueError:
-                        print('ERROR: {} is not a number.'.format(damount))
+                        print('ERROR: "{}" is not a number.'.format(damount))
                         sys.exit(1)
 
                 try:
@@ -140,7 +141,8 @@ def do_add(args):
             else:
                 tags = autoinput('Tags - colon separated (empty for None): ', tag_opts)
 
-            tags = ':'.join([x.strip() for x in tags.split(':')])
+            tags = tags.replace(' ', ':')
+            tags = ':'.join(set([x.strip() for x in tags.split(':')]))
             line.append('"{}"'.format(tags))
         elif heading == 'notes':
             if args.notes:
