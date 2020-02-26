@@ -6,13 +6,24 @@ import argparse
 from daybook.Ledger import Account
 
 
+def create_csv_opts():
+    parser = argparse.ArgumentParser(add_help=False)
+    group = parser.add_argument_group(
+        'csv options',
+        'Options for loading CSVs from the filesystem.')
+    group.add_argument(
+        '--csvs', metavar='CSV',
+        help='Specify CSVs or directories to load.',
+        nargs='+')
+
+    return parser
+
+
 def create_filter_opts():
     parser = argparse.ArgumentParser(add_help=False)
     group = parser.add_argument_group(
         'filter options',
-        'Use these options to only show results calculated from transactions '
-        'that satisfy all specified criteria. Filter options must be '
-        'specified after the command.')
+        'Only use transactions that satisfy the specified criteria.')
     group.add_argument(
         '--start',
         metavar='DATE',
@@ -30,12 +41,12 @@ def create_filter_opts():
         '--accounts',
         help='Filter for transactions involving the specified account names.',
         metavar='NAME',
-        nargs='+')
+        nargs='+', default=[])
     group.add_argument(
         '--currencies',
         help='Filter for transactions involving certain currencies.',
         metavar='CURRENCY',
-        nargs='+')
+        nargs='+', default=[])
     group.add_argument(
         '--types',
         help=(
@@ -43,15 +54,14 @@ def create_filter_opts():
             'matching type. Valid types are {}'.format(sorted(Account.types))),
         choices=sorted(Account.types),
         metavar='TYPE',
-        default=list(),
+        default=[],
         nargs='+')
     group.add_argument(
         '--tags',
-        help=(
-            'Filter for transactions that involve the matching tags. '
-            'This will also include account tags.'),
-        metavar='TAG',
-        nargs='+')
+        help='Filter for transactions that involve any of the tags specified.'
+             'here. Tags should be provided as a single '
+             'colon-separated string.',
+        metavar='TAGS', default='')
 
     return parser
 

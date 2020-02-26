@@ -3,7 +3,7 @@
 
 import argparse
 
-from daybook.client.parsergroups import create_filter_opts, create_server_opts
+from daybook.client.parsergroups import create_csv_opts, create_filter_opts, create_server_opts
 
 
 def create_client_parser():
@@ -13,6 +13,7 @@ def create_client_parser():
         Reference to the parser. Parse main command line args with
             parser.parse_args().
     """
+    csv_opts = create_csv_opts()
     filter_opts = create_filter_opts()
     server_opts = create_server_opts()
 
@@ -20,8 +21,7 @@ def create_client_parser():
         prog='daybook',
         description=(
             'Command-line accounting. Run "daybook" with no arguments '
-            'to perform first-time setup.'),
-        parents=[server_opts])
+            'to perform first-time setup.'))
 
     parser.add_argument(
         '--config',
@@ -65,7 +65,9 @@ def create_client_parser():
     sp = subparsers.add_parser(
         'balance',
         help='Print balances of accounts.',
-        parents=[filter_opts])
+        description='If any CSVs are specified, then this command will '
+                    'use those transactions instead of daybookd.',
+        parents=[csv_opts, server_opts, filter_opts])
 
     # clear command
     sp = subparsers.add_parser(
@@ -76,7 +78,9 @@ def create_client_parser():
     sp = subparsers.add_parser(
         'dump',
         help='Dump transactions to stdout as a raw csv.',
-        parents=[filter_opts])
+        description='If any CSVs are specified, then this command will '
+                    'use those transactions instead of daybookd.',
+        parents=[csv_opts, server_opts, filter_opts])
 
     # expense command
     sp = subparsers.add_parser(
@@ -84,7 +88,9 @@ def create_client_parser():
         help=(
             'Generate an expense report. The default behavior is to use '
             'the current month.'),
-        parents=[filter_opts])
+        description='If any CSVs are specified, then this command will '
+                    'use those transactions instead of daybookd.',
+        parents=[csv_opts, server_opts, filter_opts])
 
     # load command
     sp = subparsers.add_parser(
@@ -92,10 +98,11 @@ def create_client_parser():
         help='Load transactions from CSV(s).',
         description=(
             'No transactions will be committed if '
-            'any of the CSVs contain an invalid entry.'))
+            'any of the CSVs contain an invalid entry.'),
+        parents=[server_opts])
 
     sp.add_argument(
-        'csv',
+        'csvs', metavar='csv',
         help=(
             """Specify CSVs to load.
 

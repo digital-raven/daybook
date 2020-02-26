@@ -7,6 +7,7 @@ from prettytable import PrettyTable
 
 from daybook.client import client
 from daybook.client.dump import get_dump
+from daybook.client.filtering import create_filter_func
 from daybook.client.load import local_load
 from daybook.Ledger import Ledger
 
@@ -14,15 +15,19 @@ from daybook.Ledger import Ledger
 def do_balance(args):
     """ Entry point for balance subcommand.
     """
+    ledger = None
+    if not args.csvs:
+        try:
+            server = client.open(args.hostname, args.port)
+        except ConnectionRefusedError as e:
+            print(e)
+            sys.exit(1)
 
-    try:
-        server = client.open(args.hostname, args.port)
-    except ConnectionRefusedError as e:
-        print(e)
-        sys.exit(1)
-
-    ledger = Ledger(args.primary_currency)
-    ledger.load(get_dump(server, args))
+        ledger = Ledger(args.primary_currency)
+        ledger.load(get_dump(server, args))
+    else:
+        filter_ = create_filter_func(args)
+        ledger = local_load(args).filtered(filter_)
 
     # balance table
     pt = PrettyTable()

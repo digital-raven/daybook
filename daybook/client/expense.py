@@ -9,18 +9,14 @@ from prettytable import PrettyTable
 
 from daybook.client import client
 from daybook.client.dump import get_dump
+from daybook.client.filtering import create_filter_func
+from daybook.client.load import local_load
 from daybook.Ledger import Ledger
 
 
 def do_expense(args):
     """ Entry point for the expense subcommand.
     """
-    try:
-        server = client.open(args.hostname, args.port)
-    except ConnectionRefusedError as e:
-        print(e)
-        sys.exit(1)
-
     # set start date for current month
     if not args.start and not args.end and not args.range:
         args.start = datetime.date.today()
@@ -30,8 +26,19 @@ def do_expense(args):
     if not args.types:
         args.types.extend(['expense', 'income'])
 
-    ledger = Ledger(args.primary_currency)
-    ledger.load(get_dump(server, args))
+    # load the ledger
+    if not args.csvs:
+        try:
+            server = client.open(args.hostname, args.port)
+        except ConnectionRefusedError as e:
+            print(e)
+            sys.exit(1)
+
+        ledger = Ledger(args.primary_currency)
+        ledger.load(get_dump(server, args))
+    else:
+        filter_ = create_filter_func(args)
+        ledger = local_load(args).filtered(filter_)
 
     # income table
     pt = PrettyTable()

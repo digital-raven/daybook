@@ -1,4 +1,4 @@
-""" Ledger class.
+""" Ledger class and basic filter function.
 """
 
 import csv
@@ -10,6 +10,59 @@ import dateparser
 from daybook.Account import Account
 from daybook.Amount import Amount
 from daybook.Transaction import Transaction
+
+
+def in_start(start, t):
+    return not start or start <= t.date
+
+
+def in_end(end, t):
+    return not end or t.date <= end
+
+
+def in_accounts(accounts, t):
+    return not accounts or t.src.name in accounts or t.dest.name in accounts
+
+
+def in_currencies(currencies, t):
+    expected = [t.amount.src_currency, t.amount.dest_currency]
+    return not currencies or any([e in currencies for e in expected])
+
+
+def in_types(types, t):
+    return not types or t.src.type in types or t.dest.type in types
+
+
+def in_tags(tags, t):
+    return not tags or len(tags.intersection(t.tags)) > 0
+
+
+def basic_filter(t, start, end, accounts, currencies, types, tags):
+    """ Return True if transaction matches the criterion.
+
+    Arguments that are None are treated as dont-cares.
+
+    Use like this to utilize a basic filtering functionality on ledger dumps.
+
+        ledger.dump(lambda x: basic_filter(x, start, end...))
+
+    Args:
+        t: The Transaction to test.
+        start: Reject if t.date is earlier than this datetime.
+        end: Reject if t.date is later than this datetime.
+        accounts: Reject if t.src and t.dest are not in this
+            list of account times.
+        types: Reject t if neither involved account's type is in this
+            list of Account types.
+        tags: Reject t if none of its tags are in this list.
+    """
+    return (
+        in_start(start, t)
+        and in_end(end, t)
+        and in_accounts(accounts, t)
+        and in_currencies(currencies, t)
+        and in_types(types, t)
+        and in_tags(tags, t))
 
 
 class Ledger:
@@ -63,6 +116,20 @@ class Ledger:
             List of internal transaction references.
         """
         return [t for t in self.transactions if func(t)]
+
+    def filtered(self, func=lambda x: True):
+        """ Return a ledger consisting only of filtered transactions.
+
+        Args:
+            func: Function that returns True or False when provided
+                with a Transaction.
+
+        Returns:
+            A ledger loaded only with transactions that
+        """
+        subledger = Ledger(self.primary_currency)
+        subledger.load(self.dump(func))
+        return subledger
 
     def loadCsvs(self, csvfiles, hints=None, skipinvals=False):
         """ Load ledger from multiple CSVs.

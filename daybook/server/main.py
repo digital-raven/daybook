@@ -13,7 +13,7 @@ from xmlrpc.server import SimpleXMLRPCServer
 import argcomplete
 
 import daybook.server.parser
-from daybook.Ledger import Ledger
+from daybook.Ledger import Ledger, basic_filter
 from daybook.config import add_config_args, user_conf
 
 
@@ -27,53 +27,6 @@ class Login:
 # its primary currency.
 ledger = Ledger(primary_currency='dont-care')
 login = Login('', '')
-
-
-def in_start(start, t):
-    return not start or start <= t.date
-
-
-def in_end(end, t):
-    return not end or t.date <= end
-
-
-def in_accounts(accounts, t):
-    return not accounts or t.src in accounts or t.dest in accounts
-
-
-def in_currencies(currencies, t):
-    expected = [t.amount.src_currency, t.amount.dest_currency]
-    return not currencies or len([c for c in currencies if c in expected]) > 0
-
-
-def in_types(types, t):
-    return not types or t.src.type in types or t.dest.type in types
-
-
-def in_tags(tags, t):
-    return not tags or len(tags.intersection(t.tags)) > 0
-
-
-def filter_transaction(t, start, end, accounts, currencies, types, tags):
-    """ Return True if transaction matches the criterion.
-
-    Arguments that are None are treated as dont-cares.
-
-    Args:
-        t: The Transaction to test.
-        start: Reject if t.date is earlier than this.
-        end: Reject if t.date is later than this.
-        accounts: Reject if t.src and t.dest are not in this.
-        types: Reject t if neither involved account's type is in this.
-        tags: Reject t if no tags intersect this.
-    """
-    return (
-        in_start(start, t)
-        and in_end(end, t)
-        and in_accounts(accounts, t)
-        and in_currencies(currencies, t)
-        and in_types(types, t)
-        and in_tags(tags, t))
 
 
 def clear(username, password):
@@ -105,11 +58,11 @@ def dump(username, password, start, end, accounts, currencies, types, tags):
         return 1
 
     accounts = set(accounts.split()) if accounts else None
-    currencies = list(currencies.split()) if currencies else None
+    currencies = set(currencies.split()) if currencies else None
     types = set(types.split()) if types else None
     tags = set(tags.split(':')) if tags else None
 
-    return ledger.dump(lambda x: filter_transaction(
+    return ledger.dump(lambda x: basic_filter(
         x, start, end, accounts, currencies, types, tags))
 
 

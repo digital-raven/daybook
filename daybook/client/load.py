@@ -91,8 +91,8 @@ def local_load(args):
             could be decided upon based on the args.
     """
     levels = []
-    if args.csv:
-        for csv in args.csv:
+    if args.csvs:
+        for csv in args.csvs:
             levels.extend(group_csvs(csv))
     else:
         if not args.ledger_root:
