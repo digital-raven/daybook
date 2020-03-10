@@ -1,6 +1,6 @@
 date,src,dest,amount,tags,notes
 2019/10/08,liability.car-loan,void,100,,Bought a new car
 2019/10/09,void,income.my-company-payroll,200,,payday
-2019/10/09,my-company-payroll,my-checking,200,,payday
-2019/10/10,my-checking,car-loan,200,,paid off car
-2019/10/11,car-loan,my-checking,100,,oops i overpaid
+2019/10/09,income.my-company-payroll,asset.my-checking,200,,payday
+2019/10/10,asset.my-checking,liability.car-loan,200,,paid off car
+2019/10/11,liability.car-loan,asset.my-checking,100,,oops i overpaid
