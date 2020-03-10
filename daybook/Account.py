@@ -17,7 +17,7 @@ class Account:
         receivable => Money owed to you.
     """
 
-    types = {
+    types = [
         'asset',
         'expense',
         'income',
@@ -25,30 +25,36 @@ class Account:
         'liability',
         'receivable',
         'void',
-    }
+    ]
 
-    def __init__(self, name, type_):
+    def __init__(self, name):
         """ Initialize a new account instance.
 
         Mutable references are copied.
 
         Args:
-            name: Name of the account. Must contain no spaces.
-            type: Type of account. Must be in Account.types.
+            name: Dot-separated name of the account. Must contain no spaces.
+                First field must be in Account.types.
         """
-
-        if type_ not in Account.types:
-            raise ValueError('Account type must be one of {}.'.format(
-                Account.types))
-
         if ' ' in name:
-            raise ValueError('Account name {} contains a space.'.format(name))
+            raise ValueError('Account name "{}" must contain no spaces.'.format(name))
 
-        if not name:
-            raise ValueError('Account name may not be empty.')
+        fields = [x for x in name.split('.') if x]
+        if not fields:
+            raise ValueError('No account information specified.')
 
-        self.name = name
-        self.type = type_
+        # the type can be a prefix of any of Account.types
+        type_ = fields[0]
+        type_ = [x for x in Account.types if x.startswith(type_)]
+        if not type_:
+            raise ValueError('Account type "{}" is not in {}.'.format(fields[0], Account.types))
+        self.type = type_[0]
+
+        # put after type check for more intuitive error message.
+        if len(fields) == 1:
+            raise ValueError('Account "{}" contains a type, but no name.'.format(name))
+
+        self.name = '.'.join([self.type] + fields[1:])
 
         # transaction references
         self.transactions = []
@@ -86,32 +92,3 @@ class Account:
             self.last_currency = dcurr
 
         self.transactions.append(t)
-
-    @classmethod
-    def createFromStr(cls, s):
-        """ Parse a str to create a new account.
-
-        Args:
-            s: The string containing Account information.
-
-        Returns:
-            A new Account.
-
-        Raises:
-            ValueError if a valid account could not be created.
-        """
-        l_ = [x for x in s.split('.') if x]
-
-        type_ = ''
-        name = ''
-
-        if not l_:
-            raise ValueError('No account information specified.')
-        elif l_[0] in Account.types:
-            type_ = l_[0]
-            name = '.'.join(l_[1:])
-        else:
-            type_ = 'void'
-            name = '.'.join(l_)
-
-        return Account(name, type_)

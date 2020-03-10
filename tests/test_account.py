@@ -15,7 +15,7 @@ class TestAccount(unittest.TestCase):
     def test_balance_zeroes_with_self(self):
         """ An account with transactions only with itself should zero
         """
-        a = Account('name', 'asset')
+        a = Account('asset.name')
         t = []
         for i in range(1, 10):
             t.append(Transaction(dateparser.parse('today'), a, a, amount))
@@ -27,32 +27,31 @@ class TestAccount(unittest.TestCase):
         """ An account created empty string should raise ValueError
         """
         with self.assertRaises(ValueError):
-            Account.createFromStr('')
+            Account('')
 
     def test_create_from_str_one(self):
-        """ A string with no type should default to type void.
+        """ A string with no type should raise.
         """
-        a = Account.createFromStr('name')
-        self.assertEqual('name', a.name)
-        self.assertEqual('void', a.type)
+        with self.assertRaises(ValueError):
+            a = Account('name')
 
     def test_create_from_str_two(self):
         """ A string can specify a type and name.
         """
-        a = Account.createFromStr('asset.name')
-        self.assertEqual('name', a.name)
+        a = Account('asset.name')
+        self.assertEqual('asset.name', a.name)
         self.assertEqual('asset', a.type)
 
     def test_create_from_str_spaces(self):
         """ An account name cannot contain spaces.
         """
         with self.assertRaises(ValueError):
-            Account.createFromStr('asset.ihave spaces')
+            Account('asset.ihave spaces')
 
     def test_add_transaction(self):
         """ Test adding a single transaction to an account.
         """
-        a = Account('a', 'asset')
+        a = Account('asset.a')
         t = Transaction(dateparser.parse('today'), a, a, amount)
         a.addTransaction(t)
         self.assertEqual(0, a.balances['jpy'])
@@ -61,8 +60,8 @@ class TestAccount(unittest.TestCase):
     def test_add_transaction_not_me(self):
         """ Accounts should raise ValueError if not in the transaction
         """
-        a = Account('a', 'asset')
-        b = Account('b', 'asset')
+        a = Account('asset.a')
+        b = Account('asset.b')
         t = Transaction(dateparser.parse('today'), b, b, amount)
 
         with self.assertRaises(ValueError):
@@ -71,8 +70,8 @@ class TestAccount(unittest.TestCase):
     def test_balance_between_asset_accounts(self):
         """ Asset accounts should transfer money to each other and zero.
         """
-        a = Account('a', 'asset')
-        b = Account('b', 'asset')
+        a = Account('asset.a')
+        b = Account('asset.b')
         t = []
         for i in range(1, 10):
             t.append(Transaction(dateparser.parse('today'), a, b, amount))
@@ -86,9 +85,9 @@ class TestAccount(unittest.TestCase):
     def test_balance_liability_payoff(self):
         """ Verify asset account's ability to pay off debt
         """
-        a = Account('a', 'asset')
-        liab = Account('l', 'liability')
-        void = Account('void', 'asset')
+        a = Account('asset.a')
+        liab = Account('liability.l')
+        void = Account('asset.void')
 
         # create debt, add wealth, pay it off
         t1 = Transaction(dateparser.parse('today'), liab, void, amount)
@@ -106,8 +105,8 @@ class TestAccount(unittest.TestCase):
     def test_balance_rounding(self):
         """ Very small numbers should not fail balance tests.
         """
-        a = Account('a', 'asset')
-        b = Account('b', 'asset')
+        a = Account('asset.a')
+        b = Account('asset.b')
 
         x = Amount('jpy', 3.33, 'jpy', -3.33)
         y = Amount('jpy', 4.32, 'jpy', -4.32)
@@ -131,7 +130,7 @@ class TestAccount(unittest.TestCase):
     def test_self_trade(self):
         """ An account should be able to trade with itself.
         """
-        a = Account('a', 'asset')
+        a = Account('asset.a')
         x = Amount('jpy', -3.33, 'usd', 10)
 
         t = Transaction(dateparser.parse('today'), a, a, x)
@@ -140,6 +139,19 @@ class TestAccount(unittest.TestCase):
         self.assertEqual(-3.33, a.balances['jpy'])
         self.assertEqual(10, a.balances['usd'])
 
+    def test_type_prefix(self):
+        """ Prefixes of types should match.
+        """
+        a = Account('a.a')
+        self.assertEqual('asset', a.type)
+        self.assertEqual('asset.a', a.name)
+
+        a = Account('l.a')
+        self.assertEqual('liability', a.type)
+        self.assertEqual('liability.a', a.name)
+
+        with self.assertRaises(ValueError):
+            a = Account('asss.a')
 
 if __name__ == '__main__':
     unittest.main()

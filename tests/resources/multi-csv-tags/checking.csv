@@ -1,2 +1,2 @@
 date,src,dest,amount,tags,notes
-2019/10/09,income.employer-payroll,asset.this,200,i:got:paid,payday
+2019/10/09,income.employer-payroll,asset.checking,-200,i:got:paid,payday

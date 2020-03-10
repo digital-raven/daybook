@@ -321,36 +321,29 @@ class Ledger:
             ValueError: No valid account could be created from s.
         """
         s = s.strip()
-
-        account = None
-        suggestion = ''
-
-        # this substitution
-        s = '.'.join([x if x != 'this' else thisname for x in s.split('.')])
+        s = thisname if s == 'this' else s
         s = 'void.void' if s == 'void' else s
 
-        if ' ' in s:
-            if hints:
-                suggestion = hints.suggest(s)
+        try:
+            return Account(s)
+        except ValueError as ve:
 
+            if not hints:
+                raise
+
+            suggestion = hints.suggest(s)
             if not suggestion:
-                raise ValueError('No suggestion for "{}"'.format(s))
+                raise ValueError('No suggestion for "{}".'.format(s))
 
-            elif ' ' in suggestion:
+            try:
+                return Account(suggestion)
+            except ValueError as ve:
                 raise ValueError(
                     '"{}" generated the suggestion "{}", '
                     'which is invalid: {}.'.format(s, suggestion, ve))
 
-            s = suggestion
-
-        return Account.createFromStr(s)
-
     def addAccount(self, account):
         """ Add an account to this ledger.
-
-        If an account of matching name already exists, then its type
-        will be overwritten by the new entry if the existing type is
-        'void'. The transactions are not moved.
 
         This function returns an internal reference to the account.
         The proper way to call this function is...
@@ -363,11 +356,7 @@ class Ledger:
         Returns:
             A reference to the account added/modified within this ledger.
         """
-        if account.name in self.accounts:
-            if self.accounts[account.name].type == 'void':
-                self.accounts[account.name].type = account.type
-
-        else:
-            self.accounts[account.name] = Account(account.name, account.type)
+        if account.name not in self.accounts:
+            self.accounts[account.name] = Account(account.name)
 
         return self.accounts[account.name]
