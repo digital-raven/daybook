@@ -204,7 +204,7 @@ class TestLedger(unittest.TestCase):
         """
         lines = (
             'date,src,amount\n'
-            'today,asset.checking,10')
+            '11/11/11,asset.checking,10')
         ledger = Ledger(pcurr)
         ledger.load(lines, thisname='income.employer')
         self.assertEqual(10, ledger.accounts['asset.checking'].balances['usd'])
@@ -215,7 +215,7 @@ class TestLedger(unittest.TestCase):
         """
         lines = (
             'date,dest,amount\n'
-            'today,expense.grocery,-10')
+            '11/11/11,expense.grocery,-10')
         ledger = Ledger(pcurr)
         ledger.load(lines, thisname='void.checking')
         self.assertEqual('void', ledger.accounts['void.checking'].type)
@@ -228,7 +228,7 @@ class TestLedger(unittest.TestCase):
         """
         lines = (
             'date,dest,amount\n'
-            'today,expense.grocery,-10 usd 20 mxn')
+            '11/11/11,expense.grocery,-10 usd 20 mxn')
         ledger = Ledger(pcurr)
         ledger.load(lines, thisname='asset.checking')
         self.assertEqual(-10, ledger.accounts['asset.checking'].balances['usd'])
@@ -239,7 +239,7 @@ class TestLedger(unittest.TestCase):
         """
         lines = (
             'date,amount\n'
-            'today,-10 usd 20 tsla')
+            '11/11/11,-10 usd 20 tsla')
         ledger = Ledger(pcurr)
         ledger.load(lines, thisname='asset.brokerage')
         self.assertEqual(-10, ledger.accounts['asset.brokerage'].balances['usd'])
@@ -250,7 +250,7 @@ class TestLedger(unittest.TestCase):
         """
         lines = (
             'date,src,amount\n'
-            'today,,10')
+            '11/11/11,,10')
         ledger = Ledger(pcurr)
         with self.assertRaises(ValueError):
             ledger.load(lines, thisname='asset.checking')
@@ -260,7 +260,7 @@ class TestLedger(unittest.TestCase):
         """
         lines = (
             'date,dest,amount\n'
-            'today,,10')
+            '11/11/11,,10')
         ledger = Ledger(pcurr)
         with self.assertRaises(ValueError):
             ledger.load(lines, thisname='checking')
@@ -274,8 +274,8 @@ class TestLedger(unittest.TestCase):
         ledger = Ledger(pcurr)
         lines = (
             'date,dest\n'
-            'today,asset.checking\n'
-            'today,liability.car-loan\n')
+            '11/11/11,asset.checking\n'
+            '11/11/11,liability.car-loan\n')
 
         # This kind of data would likely come from accounts.csv.
         ledger.load(lines, thisname='void.accounts')
@@ -296,7 +296,7 @@ class TestLedger(unittest.TestCase):
         ledger = Ledger(pcurr)
         lines = (
             'date,dest\n'
-            'today,this\n')
+            '11/11/11,this\n')
         ledger.load(lines, thisname='income.employer')
         self.assertEqual(1, len(ledger.accounts))
         self.assertEqual('income', ledger.accounts['income.employer'].type)
@@ -311,7 +311,7 @@ class TestLedger(unittest.TestCase):
         ledger = Ledger(pcurr)
         lines = (
             'date,src,dest\n'
-            'today,void.checking,asset.ethis\n')
+            '11/11/11,void.checking,asset.ethis\n')
         ledger.load(lines, thisname='asset.checking')
         self.assertEqual(2, len(ledger.accounts))
         self.assertEqual('void', ledger.accounts['void.checking'].type)
@@ -323,11 +323,11 @@ class TestLedger(unittest.TestCase):
         ledger = Ledger(pcurr)
         lines1 = (
             'date,dest\n'
-            'today,asset.checking\n')
+            '11/11/11,asset.checking\n')
 
         lines2 = (
             'date,dest\n'
-            'today,income.checking\n')
+            '11/11/11,income.checking\n')
         ledger.load(lines1)
         self.assertEqual('asset', ledger.accounts['asset.checking'].type)
 
@@ -344,7 +344,7 @@ class TestLedger(unittest.TestCase):
         ledger = Ledger(pcurr)
         lines = (
             'date,dest\n'
-            'today,    asset.checking    \n')
+            '11/11/11,    asset.checking    \n')
         ledger.load(lines)
         self.assertEqual('asset', ledger.accounts['asset.checking'].type)
 
@@ -354,7 +354,7 @@ class TestLedger(unittest.TestCase):
         ledger = Ledger(pcurr)
         lines = (
             'date,dest\n'
-            'today,asset. checking\n')
+            '11/11/11,asset. checking\n')
         with self.assertRaises(ValueError):
             ledger.load(lines)
 
@@ -364,7 +364,7 @@ class TestLedger(unittest.TestCase):
         ledger = Ledger(pcurr)
         lines = (
             'date,dest\n'
-            'today,asset\n')
+            '11/11/11,asset\n')
         with self.assertRaises(ValueError):
             ledger.load(lines)
 
@@ -374,7 +374,7 @@ class TestLedger(unittest.TestCase):
         ledger = Ledger(pcurr)
         lines = (
             'date,dest\n'
-            'today,void\n')
+            '11/11/11,void\n')
         ledger.load(lines, thisname='asset.checking')
         self.assertEqual('void', ledger.accounts['void.void'].type)
 

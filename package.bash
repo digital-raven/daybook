@@ -23,7 +23,7 @@ then
     python3 setup.py bdist_rpm \
         --release 1 \
         --group Applications/Productivity \
-        --requires "python3 python3-argcomplete python3-PrettyTable>=0.7.2 python3-PrettyTable<1.0 python3-dateparser" \
+        --requires "python3 python3-argcomplete python3-PrettyTable>=0.7.2 python3-PrettyTable<1.0 python3-dateparser python3-dateutil" \
 
 #        --build-requires "python3-devel python3-argcomplete python3-docutils"
 
