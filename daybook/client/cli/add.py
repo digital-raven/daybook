@@ -4,8 +4,9 @@
 import csv
 import os
 import sys
+from datetime import datetime
 
-import dateparser
+import dateutil.parser
 
 from daybook.client.load import group_csvs
 from daybook.Amount import Amount
@@ -83,12 +84,15 @@ def do_add(args):
 
         if heading == 'date':
             if args.date:
-                date = dateparser.parse(args.date)
+                date = dateutil.parser.parse(args.date)
             else:
-                date = autoinput('Date (empty for today): ') or 'today'
-                date = dateparser.parse(date)
+                date = autoinput('Date (empty for today): ') or ''
+                if not date:
+                    date = datetime.now()
+                    date = date.replace(hour=0, minute=0, second=0, microsecond=0)
+                else:
+                    date = dateutil.parser.parse(date)
 
-            date = date.replace(microsecond=0)
             line.append('"{}"'.format(str(date)))
         elif heading in ['src', 'dest']:
             if heading == 'src' and args.src:

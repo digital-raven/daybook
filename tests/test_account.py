@@ -1,6 +1,5 @@
 import unittest
-
-import dateparser
+from datetime import datetime
 
 from daybook.Account import Account
 from daybook.Amount import Amount
@@ -18,7 +17,7 @@ class TestAccount(unittest.TestCase):
         a = Account('asset.name')
         t = []
         for i in range(1, 10):
-            t.append(Transaction(dateparser.parse('today'), a, a, amount))
+            t.append(Transaction(datetime.today(), a, a, amount))
 
         a.addTransactions(t)
         self.assertEqual(0, a.balances['jpy'])
@@ -52,7 +51,7 @@ class TestAccount(unittest.TestCase):
         """ Test adding a single transaction to an account.
         """
         a = Account('asset.a')
-        t = Transaction(dateparser.parse('today'), a, a, amount)
+        t = Transaction(datetime.today(), a, a, amount)
         a.addTransaction(t)
         self.assertEqual(0, a.balances['jpy'])
         self.assertEqual(1, len(a.transactions))
@@ -62,7 +61,7 @@ class TestAccount(unittest.TestCase):
         """
         a = Account('asset.a')
         b = Account('asset.b')
-        t = Transaction(dateparser.parse('today'), b, b, amount)
+        t = Transaction(datetime.today(), b, b, amount)
 
         with self.assertRaises(ValueError):
             a.addTransaction(t)
@@ -74,7 +73,7 @@ class TestAccount(unittest.TestCase):
         b = Account('asset.b')
         t = []
         for i in range(1, 10):
-            t.append(Transaction(dateparser.parse('today'), a, b, amount))
+            t.append(Transaction(datetime.today(), a, b, amount))
 
         a.addTransactions(t)
         b.addTransactions(t)
@@ -90,9 +89,9 @@ class TestAccount(unittest.TestCase):
         void = Account('asset.void')
 
         # create debt, add wealth, pay it off
-        t1 = Transaction(dateparser.parse('today'), liab, void, amount)
-        t2 = Transaction(dateparser.parse('today'), void, a, amount)
-        t3 = Transaction(dateparser.parse('today'), a, liab, amount)
+        t1 = Transaction(datetime.today(), liab, void, amount)
+        t2 = Transaction(datetime.today(), void, a, amount)
+        t3 = Transaction(datetime.today(), a, liab, amount)
 
         a.addTransactions([t2, t3])
         liab.addTransactions([t1, t3])
@@ -113,9 +112,9 @@ class TestAccount(unittest.TestCase):
         z = Amount('jpy', 0.99, 'jpy', -0.99)
 
         t = []
-        t.append(Transaction(dateparser.parse('today'), a, b, x))
-        t.append(Transaction(dateparser.parse('today'), a, b, y))
-        t.append(Transaction(dateparser.parse('today'), a, b, z))
+        t.append(Transaction(datetime.today(), a, b, x))
+        t.append(Transaction(datetime.today(), a, b, y))
+        t.append(Transaction(datetime.today(), a, b, z))
 
         a.addTransactions(t)
         b.addTransactions(t)
@@ -133,7 +132,7 @@ class TestAccount(unittest.TestCase):
         a = Account('asset.a')
         x = Amount('jpy', -3.33, 'usd', 10)
 
-        t = Transaction(dateparser.parse('today'), a, a, x)
+        t = Transaction(datetime.today(), a, a, x)
         a.addTransaction(t)
 
         self.assertEqual(-3.33, a.balances['jpy'])

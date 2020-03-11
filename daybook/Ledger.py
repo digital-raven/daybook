@@ -5,7 +5,7 @@ import csv
 import io
 import os
 
-import dateparser
+import dateutil.parser
 
 from daybook.Account import Account
 from daybook.Amount import Amount
@@ -197,7 +197,7 @@ class Ledger:
         line_num = 2
         for row in reader:
             try:
-                date = dateparser.parse(row['date'])
+                date = dateutil.parser.parse(row['date'])
 
                 notes = ''
                 if 'notes' in row:

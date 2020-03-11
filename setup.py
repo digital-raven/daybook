@@ -13,6 +13,7 @@ if 'DEBBUILD' not in os.environ:
     install_requires = [
         'argcomplete >= 1.0',
         'dateparser >= 0.7.2, < 1.0',
+        'python-dateutil >= 2.8, < 3.0',
         'prettytable',
     ]
 

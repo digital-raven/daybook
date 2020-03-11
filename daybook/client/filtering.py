@@ -6,7 +6,10 @@ across the subcommands, and it's all under one file.
 If you're going to code a tumor, make it benign.
 """
 
+from datetime import datetime
+
 import dateparser
+import dateutil.parser
 
 from daybook.Ledger import basic_filter
 
@@ -22,9 +25,9 @@ def _get_start_end(start, end, range_):
     Returns:
         start, end as DateTime objects.
     """
-    today = dateparser.parse('today')
-    start = dateparser.parse(start) if start else None
-    end = dateparser.parse(end) if end else None
+    today = datetime.today()
+    start = dateutil.parser.parse(start) if start else None
+    end = dateutil.parser.parse(end) if end else None
 
     if range_:
         range_ = today - dateparser.parse(range_)
@@ -78,5 +81,6 @@ def create_filter_func(args):
     Returns:
         Lambda that can be passed to Ledger.dump().
     """
-    def filter_func(x): return basic_filter(x, *format_filter_args(args))
+    format_args = format_filter_args(args)
+    def filter_func(x): return basic_filter(x, *format_args)
     return filter_func
