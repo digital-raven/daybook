@@ -72,7 +72,7 @@ def group_csvs(root, hints=None):
     return ret
 
 
-def load_from_local(csvs, primary_currency):
+def load_from_local(csvs, primary_currency, hints=None):
     """ Create a ledger from local csvs.
 
     The "CSVs" can be dirs or individual CSVs. Each will be paired with
@@ -80,8 +80,11 @@ def load_from_local(csvs, primary_currency):
     ledger.
 
     Args:
-        args: Daybook args namespace. Should contain at least the same
-            attrs as do_load would expect.
+        csvs: List of CSVs that should be loaded.
+        primary_currency: Primary currency the resulting ledger should use.
+        hints: If provided, then use this singular hints file for each
+            CSV, rather than the hints file which otherwise have been
+            paired with the CSV.
 
     Returns:
         A ledger loaded from local CSVs.
@@ -101,7 +104,7 @@ def load_from_local(csvs, primary_currency):
 
     ledger = Ledger(primary_currency)
     for level in levels:
-        ledger.loadCsvs(level['csvs'], level['hints'])
+        ledger.loadCsvs(level['csvs'], hints or level['hints'])
 
     return ledger
 
@@ -172,9 +175,11 @@ def load_from_args(args):
     """
     ledger = None
 
+    hints = Hints(args.hints) if args.hints else None
+
     if args.csvs:
         filter_ = create_filter_func(args)
-        ledger = load_from_local(args.csvs, args.primary_currency).filtered(filter_)
+        ledger = load_from_local(args.csvs, args.primary_currency, hints).filtered(filter_)
 
     elif args.hostname and args.port:
         ledger = load_from_server(args)
@@ -182,7 +187,7 @@ def load_from_args(args):
     elif args.ledger_root:
         print('INFO: No server info in config. Loading from ledger_root.')
         filter_ = create_filter_func(args)
-        ledger = load_from_local([args.ledger_root], args.primary_currency).filtered(filter_)
+        ledger = load_from_local([args.ledger_root], args.primary_currency, hints).filtered(filter_)
 
     else:
         raise ValueError(

@@ -15,6 +15,8 @@ def create_csv_opts():
         '--csvs', metavar='CSV',
         help='Specify CSVs or directories to load.',
         nargs='+')
+    group.add_argument(
+        '--hints', help='Override default loaded hints file for each CSV.')
 
     return parser
 
