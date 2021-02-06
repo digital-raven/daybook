@@ -193,7 +193,6 @@ class Ledger:
             raise ValueError('No "date" fieldname found.')
 
         # keep track of currency suggestions within this spreadsheet.
-        last_currencies = {}
         line_num = 2
         for row in reader:
             try:
@@ -218,13 +217,7 @@ class Ledger:
                 dest = dest or self.suggestAccount('this', thisname, hints)
 
                 # determine what currencies to use and validate amount
-                suggestion = ''
-                if src.name in last_currencies:
-                    suggestion = last_currencies[src.name]
-                elif src.name in self.accounts:
-                    suggestion = self.accounts[src.name].last_currency
-                else:
-                    suggestion = self.primary_currency
+                suggestion = self.primary_currency
 
                 try:
                     amount = Amount.createFromStr(row['amount'], suggestion)
@@ -238,9 +231,6 @@ class Ledger:
                 # will raise ValueError if invalid.
                 t = Transaction(date, src, dest, amount, tags, notes)
 
-                # update currency suggestions
-                last_currencies[src.name] = amount.src_currency
-                last_currencies[dest.name] = amount.dest_currency
             except ValueError as ve:
                 if skipinvals:
                     continue
