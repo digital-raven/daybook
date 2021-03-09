@@ -152,5 +152,6 @@ class TestAccount(unittest.TestCase):
         with self.assertRaises(ValueError):
             a = Account('asss.a')
 
+
 if __name__ == '__main__':
     unittest.main()
