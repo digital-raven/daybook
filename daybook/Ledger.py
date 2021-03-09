@@ -65,6 +65,31 @@ def basic_filter(t, start, end, accounts, currencies, types, tags):
         and in_tags(tags, t))
 
 
+def suggest_notes(src, dest, amount):
+    """ Create an automatic notes suggestion.
+
+    Uses the first 3 words of either entry. If src and dest are the
+    same or weren't provided, then use the currencies as this was
+    likely an exchange within the same account. This probably indicates
+    a stock transfer.
+
+    Args:
+        src: 'src' line from the csv row.
+        dest: 'dest' line from the csv row.
+        amount: Amount object.
+
+    Returns:
+        A suggestion as a str.
+    """
+    src = ' '.join(src.split()[0:3]) if src else ''
+    dest = ' '.join(dest.split()[0:3]) if dest else ''
+
+    accts = [x for x in [src, dest] if x]
+    currs = [amount.src_currency, amount.dest_currency] if amount else []
+
+    return ' -> '.join(accts if src != dest else currs)
+
+
 class Ledger:
 
     def __init__(self, primary_currency):
@@ -206,12 +231,15 @@ class Ledger:
                 src = None
                 dest = None
 
-                # will raise ValueError if invalid.
-                if 'src' in row:
-                    src = self.suggestAccount(row['src'], thisname, hints)
+                src_line = row['src'] if 'src' in row else None
+                dest_line = row['dest'] if 'dest' in row else None
 
-                if 'dest' in row:
-                    dest = self.suggestAccount(row['dest'], thisname, hints)
+                # will raise ValueError if invalid.
+                if src_line is not None:
+                    src = self.suggestAccount(src_line, thisname, hints)
+
+                if dest_line is not None:
+                    dest = self.suggestAccount(dest_line, thisname, hints)
 
                 src = src or self.suggestAccount('this', thisname, hints)
                 dest = dest or self.suggestAccount('this', thisname, hints)
@@ -226,8 +254,10 @@ class Ledger:
 
                 # src amount should always be negative.
                 if amount.src_amount > 0:
-                    src, dest = dest, src
+                    src, src_line, dest, dest_line = dest, dest_line, src, src_line
                     amount.correct()
+
+                notes = notes or suggest_notes(src_line, dest_line, amount)
 
                 tags = set()
                 if 'tags' in row and row['tags']:

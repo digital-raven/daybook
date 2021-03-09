@@ -2,12 +2,67 @@ import os
 import unittest
 from datetime import datetime
 
-from daybook.Ledger import Ledger
+from daybook.Amount import Amount
+from daybook.Ledger import Ledger, suggest_notes
 from daybook.Hints import Hints
 
 
 pcurr = 'usd'
 resources = '{}/resources'.format(os.path.dirname(__file__))
+
+
+class TestSuggestNotes(unittest.TestCase):
+    """ For testing suggest_notes function.
+    """
+    def test_src_and_dest(self):
+        """ It should use both src and dest.
+        """
+        notes = suggest_notes('src', 'dest', None)
+        self.assertEqual('src -> dest', notes)
+
+    def test_trim(self):
+        """ It should trim white space.
+        """
+        notes = suggest_notes('   src   ', '  dest ', None)
+        self.assertEqual('src -> dest', notes)
+
+    def test_only_src(self):
+        """ It should be capable of only using src.
+        """
+        notes = suggest_notes('src', '', None)
+        self.assertEqual('src', notes)
+
+    def test_only_dest(self):
+        """ It should be capable of only using dest.
+        """
+        notes = suggest_notes('', 'dest', None)
+        self.assertEqual('dest', notes)
+
+    def test_only_dest(self):
+        """ It should be capable of only using dest.
+        """
+        notes = suggest_notes('', 'dest', None)
+        self.assertEqual('dest', notes)
+
+    def test_currs_when_neither(self):
+        """ It should use currencies if not(src or dest).
+        """
+        a = Amount('usd', -1, 'mxn', 1)
+        notes = suggest_notes('', '', a)
+        self.assertEqual('usd -> mxn', notes)
+
+    def test_currs_when_equal(self):
+        """ It should use currencies if src == dest.
+        """
+        a = Amount('usd', -1, 'tsla', 1)
+        notes = suggest_notes('asset.investment', 'asset.investment', a)
+        self.assertEqual('usd -> tsla', notes)
+
+    def test_empty_return(self):
+        """ It should return empty string if nothing proivded.
+        """
+        notes = suggest_notes(None, None, None)
+        self.assertEqual('', notes)
 
 
 class TestLedger(unittest.TestCase):
@@ -41,7 +96,7 @@ class TestLedger(unittest.TestCase):
         self.assertEqual(pcurr, t.amount.src_currency)
         self.assertEqual(pcurr, t.amount.dest_currency)
         self.assertEqual(set(), t.tags)
-        self.assertEqual('', t.notes)
+        self.assertEqual('usd -> usd', t.notes)
 
     def test_single_transaction(self):
         """ Verify correct behavior for single csv.
@@ -413,6 +468,77 @@ class TestLedger(unittest.TestCase):
 
         self.assertEqual(t1, t3)
         self.assertEqual(t2, t3)
+
+    def test_note_generation_both(self):
+        """ Notes should automatically be generated if not provided.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,src,dest,amount\n'
+            '11/11/11,asset.checking,BP BEYOND PETROLEUM ASDF,-10\n')
+
+        ledger.load(lines, hints=Hints('{}/hints'.format(resources)))
+        t = ledger.transactions[0]
+
+        # The first 3 words of the original src / dest field should be used.
+        self.assertEqual('expense.gasoline', t.dest.name)
+        self.assertEqual('asset.checking -> BP BEYOND PETROLEUM', t.notes)
+
+    def test_note_generation_src_only(self):
+        """ Note generation should use the orginal src field.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,src,amount\n'
+            '11/11/11,asset.checking,-10\n')
+
+        ledger.load(lines, thisname='expense.gasoline', hints=Hints('{}/hints'.format(resources)))
+        t = ledger.transactions[0]
+
+        # The first 3 words of the original field should be used.
+        self.assertEqual('asset.checking', t.notes)
+
+    def test_note_generation_dest_only(self):
+        """ Note generation should use the orginal dest field.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,dest,amount\n'
+            '11/11/11,BP BEYOND PETROLEUM ASDF,-10\n')
+
+        ledger.load(lines, thisname='asset.checking', hints=Hints('{}/hints'.format(resources)))
+        t = ledger.transactions[0]
+
+        # The first 3 words of the original field should be used.
+        self.assertEqual('BP BEYOND PETROLEUM', t.notes)
+
+    def test_note_generation_currencies(self):
+        """ Notes should use currencies if no src or dest field present.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,amount\n'
+            '11/11/11,-10:usd 50:tsla\n')
+
+        ledger.load(lines, thisname='asset.investment')
+        t = ledger.transactions[0]
+
+        self.assertEqual('usd -> tsla', t.notes)
+
+    def test_note_generation_inverted(self):
+        """ Note generation should also correct for src -> dest orientation.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,dest,src,amount\n'
+            '11/11/11,asset.checking,BP BEYOND PETROLEUM ASDF,10\n')
+
+        ledger.load(lines, hints=Hints('{}/hints'.format(resources)))
+        t = ledger.transactions[0]
+
+        # The orientation should be flipped here.
+        self.assertEqual('expense.gasoline', t.dest.name)
+        self.assertEqual('asset.checking -> BP BEYOND PETROLEUM', t.notes)
 
 
 if __name__ == '__main__':
