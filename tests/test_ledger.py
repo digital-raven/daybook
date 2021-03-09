@@ -197,6 +197,7 @@ class TestLedger(unittest.TestCase):
         ledger2 = Ledger(pcurr)
         ledger2.load(ledger1.dump())
 
+        # May fail because tag order is non-deterministic.
         self.assertEqual(ledger1.dump(), ledger2.dump())
 
     def test_src_only(self):
@@ -377,6 +378,41 @@ class TestLedger(unittest.TestCase):
             '11/11/11,void\n')
         ledger.load(lines, thisname='asset.checking')
         self.assertEqual('void', ledger.accounts['void.void'].type)
+
+    def test_correction(self):
+        """ Src and dest should automatically orient.
+        """
+        l1 = Ledger(pcurr)
+        l2 = Ledger(pcurr)
+
+        # src field == asset.checking
+        lines = (
+            'date,dest,amount\n'
+            '11/11/11,income.employer,1000\n')
+        l1.load(lines, thisname='asset.checking')
+
+        # src field == income.employer
+        lines = (
+            'date,dest,amount\n'
+            '11/11/11,asset.checking,-1000\n')
+        l2.load(lines, thisname='income.employer')
+
+        t1 = l1.transactions[0]
+        t2 = l2.transactions[0]
+
+        self.assertEqual(t1, t2)
+
+        # This check should pass as well; dest field == income.employer
+        l3 = Ledger(pcurr)
+        lines = (
+            'date,src,amount\n'
+            '11/11/11,asset.checking,1000\n')
+        l3.load(lines, thisname='income.employer')
+
+        t3 = l3.transactions[0]
+
+        self.assertEqual(t1, t3)
+        self.assertEqual(t2, t3)
 
 
 if __name__ == '__main__':

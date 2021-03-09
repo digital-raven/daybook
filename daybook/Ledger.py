@@ -224,6 +224,11 @@ class Ledger:
                 except KeyError:
                     amount = Amount(suggestion, 0, suggestion, 0)
 
+                # src amount should always be negative.
+                if amount.src_amount > 0:
+                    src, dest = dest, src
+                    amount.correct()
+
                 tags = set()
                 if 'tags' in row and row['tags']:
                     tags = {x.strip() for x in row['tags'].split(':') if x.strip()}

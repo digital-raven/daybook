@@ -45,6 +45,17 @@ class Amount:
         self.dest_currency = dest_currency
         self.dest_amount = dest_amount
 
+    def correct(self):
+        """ Ensure src amount is negative.
+
+        If src amount is positive, then the source and destination
+        amounts and currencies are swapped to represent value flowing
+        from the source.
+        """
+        if self.dest_amount < 0:
+            (self.src_currency, self.src_amount, self.dest_currency, self.dest_amount) = (
+                self.dest_currency, self.dest_amount, self.src_currency, self.src_amount)
+
     def __str__(self):
         return '{}:{} {}:{}'.format(
             self.src_currency,

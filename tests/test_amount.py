@@ -219,6 +219,38 @@ class TestAmount(unittest.TestCase):
         a = Amount.createFromStr('usd:-0.00 mxn:-0.00', 'mxn')
         a = Amount.createFromStr('usd:0.00 mxn:0.00', 'mxn')
 
+    def test_correction(self):
+        """ Amount.correct should swap src and dest if src_amount is negative.
+
+        The constructor should just accept at face value, however.
+        """
+
+        # This should be fine
+        a = Amount.createFromStr('-1.0 usd mxn 1', 'usd')
+        self.assertEqual('usd', a.src_currency)
+        self.assertEqual('mxn', a.dest_currency)
+        self.assertEqual(-1, a.src_amount)
+        self.assertEqual(1, a.dest_amount)
+
+        a.correct()
+        self.assertEqual('usd', a.src_currency)
+        self.assertEqual('mxn', a.dest_currency)
+        self.assertEqual(-1, a.src_amount)
+        self.assertEqual(1, a.dest_amount)
+
+        # This should be corrected
+        a = Amount.createFromStr('1 usd mxn -1', 'usd')
+        self.assertEqual('usd', a.src_currency)
+        self.assertEqual('mxn', a.dest_currency)
+        self.assertEqual(1, a.src_amount)
+        self.assertEqual(-1, a.dest_amount)
+
+        a.correct()
+        self.assertEqual('mxn', a.src_currency)
+        self.assertEqual('usd', a.dest_currency)
+        self.assertEqual(-1, a.src_amount)
+        self.assertEqual(1, a.dest_amount)
+
 
 if __name__ == '__main__':
     unittest.main()
