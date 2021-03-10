@@ -34,32 +34,6 @@ def main():
     # fill in args with values from config.
     args = add_config_args(args, args.config)
 
-    # need to fill in server info if it wasn't in the config.
-    try:
-        getattr(args, 'hostname')
-    except AttributeError:
-        setattr(args, 'hostname', '')
-
-    try:
-        getattr(args, 'port')
-    except AttributeError:
-        setattr(args, 'port', '')
-
-    try:
-        getattr(args, 'username')
-    except AttributeError:
-        setattr(args, 'username', '')
-
-    try:
-        getattr(args, 'password')
-    except AttributeError:
-        setattr(args, 'username', '')
-
-    try:
-        getattr(args, 'ledger_root')
-    except AttributeError:
-        setattr(args, 'ledger_root', './')
-
     if not args.primary_currency:
         print('ERROR: No primary_currency in {}'.format(args.config))
         sys.exit(1)
