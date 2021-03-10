@@ -14,13 +14,33 @@ user_confdir = '{}/.config/daybook'.format(Path.home())
 user_conf = '{}/daybook.ini'.format(user_confdir)
 
 
+def get_defaults():
+    """ Default values for items that should be in a config file.
+
+    These values will be overuled by existing config entries. Useful in
+    the event a config file is missing an entry.
+
+    Returns:
+        A dictionary that contains all expected entries for a
+        daybook configuration file.
+    """
+    return {
+        'ledger_root': './',
+        'primary_currency': '',
+        'hostname': '',
+        'port': '',
+        'username': '',
+        'password': '',
+    }
+
+
 def do_first_time_setup():
     """ Create ledger root and copy default.ini to user conf path.
     """
     charset = string.ascii_lowercase + string.ascii_uppercase + string.digits
 
     # use these vals to create user config if not present in system defaults.
-    default_vals = {}
+    default_vals = get_defaults()
     default_vals['ledger_root'] = '{}/.local/share/daybook'.format(Path.home())
     default_vals['primary_currency'] = 'usd'
     default_vals['hostname'] = 'localhost'
@@ -90,12 +110,15 @@ def add_config_args(args, config=None):
     if 'default' not in cp:
         raise KeyError('Config {} has no "default" section.'.format(config))
 
-    # copy vals from config file into args if not already in args.
-    for key in cp['default']:
+    d = get_defaults()
+    d.update(cp['default'])
+
+    # copy vals into args if not already in args.
+    for key, val in d.items():
         try:
             if not getattr(args, key):
-                setattr(args, key, cp['default'][key])
+                setattr(args, key, val)
         except AttributeError:
-            setattr(args, key, cp['default'][key])
+            setattr(args, key, val)
 
     return args
