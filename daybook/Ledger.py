@@ -10,6 +10,7 @@ import dateutil.parser
 from daybook.Account import Account
 from daybook.Amount import Amount
 from daybook.Transaction import Transaction
+from daybook.util.DupeTracker import DupeTracker
 
 
 def in_start(start, t):
@@ -92,21 +93,36 @@ def suggest_notes(src, dest, amount):
 
 class Ledger:
 
-    def __init__(self, primary_currency):
+    def __init__(self, primary_currency, duplicate_window=0):
+        """ Init a new Ledger object.
+
+        Args:
+            primary_currency: Primary currency for the ledger.
+            duplicate_window: Transactions from different perspectives
+                whose dates are <= this value will be flagged as
+                duplicates and not inserted. Set to False to disable
+                duplicate detection.
+        """
 
         self.primary_currency = primary_currency
+        self.duplicate_window = duplicate_window
+
         self.accounts = {}
         self.transactions = []
 
         # Detect redundant transactions.
-        self.unique_transactions = dict()
+        self.dupes = DupeTracker(self.duplicate_window)
+
+        # Number of times "addTransactions" is called.
+        self.num_adds = 0
 
     def clear(self):
         """ Clear the ledger and start from scratch.
         """
         self.accounts = {}
         self.transactions = []
-        self.unique_transactions = dict()
+        self.dupes = DupeTracker(self.duplicate_window)
+        self.num_adds = 0
 
     def sort(self):
         """ Sort the ledger's transactions by date.
@@ -156,6 +172,33 @@ class Ledger:
         subledger.load(self.dump(func))
         return subledger
 
+    def reportDupes(self, transactions):
+        """ Report which transactions are duplicates.
+
+        transactions should be a list of transactions returned from
+        Ledger.addTransactions or any of the load methods.
+
+        Args:
+            transactions: A list of transaction references.
+
+        Returns:
+            A list of tuples. Each contains the transaction
+            reference that was inserted as a duplicate, as well as
+            the perspective of the original transaction, and the
+            perspective of the proivded reference.
+
+            Example iteration through this list:
+
+                transactions = ledger.addTransactions(transactions, 'asset.checking')
+                dupes = ledger.reportDupes(transactions)
+                for t, o, a in dupes:
+                    print(t, o, a)
+        """
+        ts = transactions
+        orefs, ops, aps = self.dupes.getPerspectives(ts)
+
+        return [(t, op, ap) for oref, t, op, ap in zip(orefs, ts, ops, aps) if oref is not t]
+
     def loadCsvs(self, csvfiles, hints=None, skipinvals=False):
         """ Load ledger from multiple CSVs.
 
@@ -171,7 +214,7 @@ class Ledger:
         return [t for f in csvfiles for t in self.loadCsv(f, hints, skipinvals)]
 
     def loadCsv(self, csvfile, hints=None, skipinvals=False):
-        """ Load ledger from a sincle CSV.
+        """ Load ledger from a single CSV.
 
         Args:
             csvfile: csv file to load from.
@@ -190,7 +233,7 @@ class Ledger:
             except ValueError as ve:
                 raise ValueError('CSV {}: {}'.format(csvfile, ve))
 
-    def load(self, lines, thisname='void.void', hints=None, skipinvals=False):
+    def load(self, lines, thisname='', hints=None, skipinvals=False):
         """ Loads transactions into this ledger from csv-lines.
 
         No transactions will be committed to the ledger if any line
@@ -200,6 +243,7 @@ class Ledger:
             lines: List of lines to be added. The first line must be the
                 headings 'date,src,dest,amount,tags,notes'.
             thisname: Name to use in case an account is named 'this'.
+                Also serves as perspective for incoming transactions.
             hints: Hints reference to help with accont creation.
             skipinvals: Silently pass lines deemed invalid.
 
@@ -209,6 +253,9 @@ class Ledger:
         Raises:
             ValueError: A row from the CSV was invalid.
         """
+        perspective = thisname
+        thisname = thisname or 'void.void'
+
         if type(lines) == str:
             lines = io.StringIO(lines)
 
@@ -276,23 +323,28 @@ class Ledger:
             line_num = line_num + 1
 
         # commit transactions to ledger. this code cannot raise.
-        return self.addTransactions(newtrans)
+        return self.addTransactions(newtrans, perspective)
 
-    def addTransactions(self, transactions):
+    def addTransactions(self, transactions, perspective=''):
         """ Add list of transactions.
 
         There will be no reference sharing - all mutable data are copied,
         and this ledger will create its own unique account references.
 
+        The list returned by this function can be examined for duplicate
+        transactions by passing it to Ledger.reportDupes.
+
         Args:
             transactions: Transactions to import.
+            perspective: See Ledger.addTransaction.
 
         Returns:
             A list containing internal references to the new transactions.
         """
-        return [self.addTransaction(t) for t in transactions]
+        self.num_adds += 1
+        return [self.addTransaction(t, perspective, self.num_adds) for t in transactions]
 
-    def addTransaction(self, t):
+    def addTransaction(self, t, perspective='', block=0):
         """ Add a transaction to the ledger.
 
         The appropriate way to use this function is...
@@ -302,34 +354,48 @@ class Ledger:
         Because the ledger will insert a shallow-copy of t, but this copy
         will be updated with internal account references.
 
+        A transaction will only be committed if is not a duplicate. If a
+        transaction is within a few days of another, very similar,
+        transaction (identical src and dest accounts and identical amounts),
+        but of a differing perspective, then daybook will assume that two or
+        more sources are reporting on the same event. This transaction is then
+        flagged as a duplicate and is not committed.
+
+        If a transaction is a duplicate, then the reference returned by this
+        function will corrsepond to a "True" output from Ledger.reportDupes.
+
         Args:
             t: Transaction object to attempt to add.
+            perspective: The perspective from which these transactions are
+                being reported. This is likely the base name of the CSV
+                that reported the transactions.
+            block: Block ID of the transaction. If a transaction with a
+                perspective of '' is added and there exists an identical
+                transaction with a perspective of '' but was inserted with
+                a lower block number, then the current transaction is
+                not inserted, the block number of the existing transaction
+                is updated, and a reference to the existing transaction
+                is returned.
 
         Returns:
             A reference to the transaction object within the ledger.
         """
 
-        # add copies of the accounts and update t.
-        t.src = self.addAccount(t.src)
-        t.dest = self.addAccount(t.dest)
+        # create our own copy
+        src = self.addAccount(t.src)
+        dest = self.addAccount(t.dest)
+        t = Transaction(t.date, src, dest, t.amount, t.tags, t.notes)
 
-        if t not in self.unique_transactions:
-
-            # create our own copy
-            t = Transaction(t.date, t.src, t.dest, t.amount, t.tags, t.notes)
-
-            # commit the transaction
+        orig, t = self.dupes.checkDupe(t, perspective, block)
+        if orig is not None:
+            orig.addTags(t.tags)
+        else:
             self.transactions.append(t)
             t.src.addTransaction(t)
             if t.src is not t.dest:
                 t.dest.addTransaction(t)
-            self.unique_transactions[t] = t
 
-            return t
-        else:
-            internal = self.unique_transactions[t]
-            internal.addTags(t.tags)
-            return internal
+        return t
 
     def suggestAccount(self, s, thisname='void.void', hints=None):
         """ Parse a string and create an account reference from it.

@@ -34,6 +34,18 @@ def main():
     # fill in args with values from config.
     args = add_config_args(args, args.config)
 
+    # set duplicate_window appropriately.
+    if args.duplicate_window == 'off':
+        args.duplicate_window = False
+    else:
+        try:
+            args.duplicate_window = int(args.duplicate_window)
+            if args.duplicate_window < 0:
+                raise ValueError
+        except ValueError:
+            print('ERROR: duplicate_window must be "off" or a positive integer.')
+            sys.exit(1)
+
     if not args.primary_currency:
         print('ERROR: No primary_currency in {}'.format(args.config))
         sys.exit(1)

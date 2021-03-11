@@ -16,6 +16,9 @@ def create_csv_opts():
         help='Specify CSVs or directories to load.',
         nargs='+')
     group.add_argument(
+        '--duplicate-window', metavar='DAYS', default=None,
+        help='Day range in which duplicate transactions will be flagged.')
+    group.add_argument(
         '--hints', help='Override default loaded hints file for each CSV.')
 
     return parser
