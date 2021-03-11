@@ -5,6 +5,7 @@ from datetime import datetime
 from daybook.Amount import Amount
 from daybook.Ledger import Ledger, suggest_notes
 from daybook.Hints import Hints
+from daybook.Transaction import Transaction
 
 
 pcurr = 'usd'
@@ -99,7 +100,33 @@ class TestLedger(unittest.TestCase):
         self.assertEqual('usd -> usd', t.notes)
 
     def test_single_transaction(self):
-        """ Verify correct behavior for single csv.
+        """ Verify correct behavior for a single transaction.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,src,dest,amount,tags\n'
+            '11/11/11,asset.checking,expense.food,-10,mcdonalds:fast-food')
+        ledger.load(lines)
+
+        self.assertEqual(1, len(ledger.transactions))
+
+        checking = ledger.accounts['asset.checking']
+        food = ledger.accounts['expense.food']
+
+        exp = Transaction(
+            datetime(2011, 11, 11, 0, 0, 0),
+            checking, food,
+            Amount('usd', -10, 'usd', 10))
+
+        self.assertEqual(exp, ledger.transactions[0])
+
+        self.assertEqual(1, len(checking.balances))
+        self.assertEqual(1, len(food.balances))
+        self.assertEqual(-10, checking.balances[pcurr])
+        self.assertEqual(10, food.balances[pcurr])
+
+    def test_single_transaction_csv(self):
+        """ Verify correct behavior for single transaction in a csv.
         """
         ledger = Ledger(pcurr)
         ledger.loadCsv('{}/single.csv'.format(resources), Hints('{}/hints'.format(resources)))
@@ -539,6 +566,442 @@ class TestLedger(unittest.TestCase):
         # The orientation should be flipped here.
         self.assertEqual('expense.gasoline', t.dest.name)
         self.assertEqual('asset.checking -> BP BEYOND PETROLEUM', t.notes)
+
+    def test_idempotency1(self):
+        """ Re-importing transactions should not affect a ledger.
+        """
+        path = '{}/multi-csv'.format(resources)
+        csvs = [
+            '{}/car-loan.csv'.format(path),
+            '{}/my-checking.csv'.format(path),
+            '{}/my-company-payroll.csv'.format(path),
+        ]
+
+        ledger1 = Ledger(pcurr)
+        ledger1.loadCsvs(csvs)
+
+        ledger2 = Ledger(pcurr)
+        ledger2.load(ledger1.dump())
+
+        ledger1.load(ledger2.dump())
+
+        # May fail because tag order is non-deterministic.
+        self.assertEqual(ledger1.dump(), ledger2.dump())
+
+    def test_idempotency2(self):
+        """ Same as above, but original transactions were empty perspective.
+        """
+        exp = Ledger(pcurr)
+        ledger1 = Ledger(pcurr)
+        ledger2 = Ledger(pcurr)
+
+        lines = (
+            'date,src,dest,amount\n'
+            '14/02/15,asset.investment,asset.checking,-10\n'
+            '14/02/15,asset.checking,expense.food,-10\n'
+            '14/02/15,asset.checking,expense.food,-10\n')
+
+        exp.load(lines)
+        ledger1.load(lines)
+
+        ledger2.load(ledger1.dump())
+        ledger1.load(ledger2.dump())
+
+        self.assertEqual(3, len(ledger1.transactions))
+        self.assertEqual(ledger1.dump(), ledger2.dump())
+
+        for t in exp.transactions:
+            self.assertIn(t, ledger1.transactions)
+            self.assertIn(t, ledger2.transactions)
+
+    def test_idempotency3(self):
+        """ Same as test_idemptoency1, but each ledger starts with
+            some transactions.
+
+            Also indirectly verifies that empty perspective transactions
+            can only duplicate on exact dates.
+        """
+        ledger1 = Ledger(pcurr, duplicate_window=4)
+        ledger2 = Ledger(pcurr, duplicate_window=4)
+
+        lines1_1 = (
+            'date,src,dest,amount\n'
+            '2015/01/10,asset.checking,expense.food,-10\n'
+            '2015/01/10,asset.checking,expense.duplicate,-20\n')
+
+        # This food transaction should register as duplicate...
+        lines1_2 = (
+            'date,src,dest,amount\n'
+            '2015/01/14,asset.checking,expense.food,-10\n')
+
+        # But not in ledger2.
+        lines2 = (
+            'date,src,dest,amount\n'
+            '2015/01/14,asset.checking,expense.food,-10\n'
+            '2015/01/17,asset.investment,asset.checking,-10\n'
+            '2015/01/10,asset.checking,expense.duplicate,-20\n')
+
+        ledger1.load(lines1_1, 'p1')
+        ledger1.load(lines1_2, 'p2')
+        ledger2.load(lines2)
+
+        self.assertEqual(2, len(ledger1.transactions))
+        self.assertEqual(3, len(ledger2.transactions))
+
+        ledger2.load(ledger1.dump())
+        ledger1.load(ledger2.dump())
+
+        # That duplicate food transaction should now appear in both dumps
+        # because empty perspectives can only dupe on exact dates of an
+        # original transaction.
+        exp = Ledger(pcurr)
+        lines = (
+            'date,src,dest,amount\n'
+            '2015/01/10,asset.checking,expense.food,-10\n'
+            '2015/01/14,asset.checking,expense.food,-10\n'
+            '2015/01/17,asset.investment,asset.checking,-10\n'
+            '2015/01/10,asset.checking,expense.duplicate,-20\n')
+        exp.load(lines)
+
+        self.assertEqual(4, len(exp.transactions))
+        self.assertEqual(4, len(ledger1.transactions))
+        self.assertEqual(len(ledger1.transactions), len(ledger2.transactions))
+        for t in exp.transactions:
+            self.assertIn(t, ledger1.transactions)
+            self.assertIn(t, ledger2.transactions)
+
+    def test_overloading_empty_perspectives(self):
+        """ Transactions from empty perspectives should "fill in".
+
+        eg. If 5 identical transactions are empty but in the same report, then
+        it should take 6 identical empty transactions to create a new entry.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,src,dest,amount\n'
+            '11/11/11,asset.checking,expense.food,-10\n'
+            '11/11/11,asset.checking,expense.food,-10\n'
+            '11/11/11,asset.checking,expense.food,-10\n'
+            '11/11/11,asset.checking,expense.food,-10\n')
+
+        ledger.load(lines)
+        ledger.load(lines)
+        ledger.load(lines)
+
+        self.assertEqual(4, len(ledger.transactions))
+
+        lines += '11/11/11,asset.checking,expense.food,-10\n'
+        ledger.load(lines)
+        self.assertEqual(5, len(ledger.transactions))
+
+        checking = ledger.accounts['asset.checking']
+        food = ledger.accounts['expense.food']
+        self.assertEqual(-50, checking.balances['usd'])
+        self.assertEqual(50, food.balances['usd'])
+
+    def test_empty_perspective_duplicate_same_date(self):
+        """ Empty perspectives should only be considered duplicates if their
+            dates exactly match the date of an original transaction.
+        """
+        ledger = Ledger(pcurr, duplicate_window=4)
+        og = (
+            'date,dest,amount\n'
+            '09/10/2014,expense.food,-10\n')
+        dupe = (
+            'date,dest,amount\n'
+            '09/14/2014,asset.checking,10\n')
+
+        empty = (
+            'date,src,dest,amount\n'
+            '09/14/2014,asset.checking,expense.food,-10\n')
+
+        og = ledger.load(og, thisname='asset.checking')
+        dupe = ledger.load(dupe, thisname='expense.food')
+        empty = ledger.load(empty)
+
+        self.assertEqual(2, len(ledger.transactions))
+
+        self.assertEqual(0, len(ledger.reportDupes(og)))
+        self.assertEqual(1, len(ledger.reportDupes(dupe)))
+        self.assertEqual(0, len(ledger.reportDupes(empty)))
+
+    def test_empty_perspective_duplicate_same_date2(self):
+        """ Same as above, but all perspectives are empty.
+        """
+        ledger = Ledger(pcurr, duplicate_window=5)
+        t1 = (
+            'date,src,dest,amount\n'
+            '2009/10/10,asset.checking,expense.food,-10\n')
+        t2 = (
+            'date,src,dest,amount\n'
+            '2009/10/10,asset.checking,expense.food,-10\n')
+
+        # Should count as unique
+        t3 = (
+            'date,src,dest,amount\n'
+            '2009/10/15,asset.checking,expense.food,-10\n')
+
+        t1 = ledger.load(t1)
+        t2 = ledger.load(t2)
+        t3 = ledger.load(t3)
+
+        self.assertEqual(2, len(ledger.transactions))
+
+        self.assertEqual(0, len(ledger.reportDupes(t1)))
+        self.assertEqual(1, len(ledger.reportDupes(t2)))
+        self.assertEqual(0, len(ledger.reportDupes(t3)))
+
+    def test_equivalent_transaction_same_perspective(self):
+        """ Equal transactions from the same perspective should be inserted.
+
+        Only applies to non-empty perspectives.
+        """
+        ledger = Ledger(pcurr)
+        lines = (
+            'date,dest,amount\n'
+            '11/11/11,expense.video-games,-10\n')
+        lines2 = (
+            'date,dest,amount\n'
+            '11/11/12,expense.video-games,-20\n')
+
+        t = ledger.load(lines, thisname='asset.checking')
+        t += ledger.load(lines, thisname='asset.checking')
+        t += ledger.load(lines2, thisname='asset.checking')
+        checking = ledger.accounts['asset.checking']
+
+        self.assertEqual([], ledger.reportDupes(t))
+        self.assertEqual(3, len(ledger.transactions))
+        self.assertEqual(-40, checking.balances[pcurr])
+
+    def test_equivalent_transaction_different_perspective(self):
+        """ Equivalent transactions from the different files should be
+            counted as duplicates.
+        """
+        ledger = Ledger(pcurr)
+        t_checking = (
+            'date,dest,amount\n'
+            '11/11/11,asset.investment,-10\n')
+
+        t_investment = (
+            'date,dest,amount\n'
+            '11/11/11,asset.checking,10\n')
+
+        trans = ledger.load(t_checking, thisname='asset.checking')
+        trans += ledger.load(t_investment, thisname='asset.investment')
+
+        checking = ledger.accounts['asset.checking']
+        investment = ledger.accounts['asset.investment']
+
+        dupes = ledger.reportDupes(trans)
+        t, o, a = dupes[0]
+        self.assertEqual(1, len(dupes))
+        self.assertIs(trans[1], t)
+        self.assertEqual('asset.checking', o)
+        self.assertEqual('asset.investment', a)
+
+        self.assertEqual(1, len(ledger.transactions))
+        self.assertEqual(-10, checking.balances[pcurr])
+        self.assertEqual(10, investment.balances[pcurr])
+
+    def test_real_perspective_dupes_empty_perspective(self):
+        """ Regular perspectives should duplicate empties just the same.
+        """
+        ledger = Ledger(pcurr, duplicate_window=5)
+        t1 = (
+            'date,src,dest,amount\n'
+            '2011/11/11,asset.checking,expense.food,-10\n')
+
+        t2 = (
+            'date,src,dest,amount\n'
+            '2011/11/15,asset.checking,expense.food,-10\n')
+
+        ledger.load(t1)
+        t = ledger.load(t2, thisname='asset.checking')
+
+        self.assertEqual(1, len(ledger.transactions))
+
+        dupes = ledger.reportDupes(t)
+        self.assertEqual(1, len(dupes))
+
+        t, o, a = dupes[0]
+        self.assertEqual(o, '')
+        self.assertEqual(a, 'asset.checking')
+
+    def test_2_dates_over_5_perspectives(self):
+        """ 2 dates over 5 perspectives should produce 1 transaction.
+        """
+        ledger = Ledger(pcurr, duplicate_window=2)
+        header = 'date,src,dest,amount\n'
+
+        t1 = '2011/11/11,asset.checking,expense.food,-10\n'
+        t2 = '2011/11/12,asset.checking,expense.food,-10\n'
+        t3 = '2011/11/11,asset.checking,expense.food,-10\n'
+        t4 = '2011/11/12,asset.checking,expense.food,-10\n'
+        t5 = '2011/11/11,asset.checking,expense.food,-10\n'
+
+        t = ledger.load(header + t1, thisname='p1')
+        t += ledger.load(header + t2, thisname='p2')
+        t += ledger.load(header + t3, thisname='p3')
+        t += ledger.load(header + t4, thisname='p4')
+        t += ledger.load(header + t5, thisname='p5')
+
+        dupes = ledger.reportDupes(t)
+
+        self.assertEqual(1, len(ledger.transactions))
+        self.assertEqual(4, len(dupes))
+
+        self.assertIs(t[1], dupes[0][0])
+        self.assertIs(t[2], dupes[1][0])
+        self.assertIs(t[3], dupes[2][0])
+        self.assertIs(t[4], dupes[3][0])
+
+    def test_date_limit_on_dupes(self):
+        """ 3 persepctives with 3 dates should produce 2 unique entires.
+
+        This is because duplicate buckets can only support a maximum of
+        2 unique dates. How could 3 dates relate to a single transaction?
+        """
+        ledger = Ledger(pcurr, duplicate_window=3)
+        header = 'date,src,dest,amount\n'
+
+        # These 2 should get paired.
+        t1 = '01/01/2021,asset.checking,expense.food,-10\n'
+        t2 = '01/02/2021,asset.checking,expense.food,-10\n'
+
+        # This one should be unique.
+        t3 = '01/03/2021,asset.checking,expense.food,-10\n'
+
+        trans = ledger.load(header + t1, thisname='p1')
+        trans += ledger.load(header + t2, thisname='p2')
+        trans += ledger.load(header + t3, thisname='p3')
+
+        checking = ledger.accounts['asset.checking']
+
+        self.assertEqual(2, len(ledger.transactions))
+        self.assertEqual(-20, checking.balances['usd'])
+
+        dupes = ledger.reportDupes(trans)
+        self.assertEqual(1, len(dupes))
+
+        t, o, a = dupes[0]
+        self.assertIs(trans[1], t)
+        self.assertEqual('p1', o)
+        self.assertEqual('p2', a)
+
+    def test_duplicate_matching_src_and_dest(self):
+        """ Duplicates should require matching src and dest accounts.
+        """
+        ledger = Ledger(pcurr, duplicate_window=5)
+
+        # asset.checking records a $10 refund from expense.food
+        t1 = (
+            'date,dest,amount\n'
+            '01/10/2021,expense.food,10\n')
+
+        # asset.checking records a $10 expense to expense.food
+        t2 = (
+            'date,src,dest,amount\n'
+            '01/10/2021,asset.checking,expense.food,-10\n')
+
+        trans = ledger.load(t1, thisname='asset.checking')
+        trans += ledger.load(t2, thisname='p2')
+
+        dupes = ledger.reportDupes(trans)
+        self.assertEqual([], dupes)
+        self.assertEqual(2, len(ledger.transactions))
+
+    def test_duplicate_window(self):
+        """ Transactions should be unique if outside the window.
+        """
+        ledger = Ledger(pcurr, duplicate_window=5)
+        header = 'date,src,dest,amount\n'
+
+        # These should be 3 unique transactions.
+        t1 = '01/10/2021,asset.checking,expense.food,-10\n'
+        t2 = '01/04/2021,asset.checking,expense.food,-10\n'
+        t3 = '01/16/2021,asset.checking,expense.food,-10\n'
+
+        trans = ledger.load(header + t1, thisname='p1')
+        trans += ledger.load(header + t2, thisname='p2')
+        trans += ledger.load(header + t3, thisname='p3')
+
+        dupes = ledger.reportDupes(trans)
+        self.assertEqual([], dupes)
+
+        self.assertEqual(3, len(ledger.transactions))
+
+    def test_duplicate_window2(self):
+        """ Transactions should be duplicates if inside the window.
+        """
+        ledger = Ledger(pcurr, duplicate_window=5)
+
+        t1 = (
+            'date,dest,amount\n'
+            '01/10/2021,asset.investment,10\n'
+            '01/10/2021,expense.food,-10\n')
+
+        # These should be paired with those above.
+        t2 = (
+            'date,src,dest,amount\n'
+            '01/05/2021,asset.investment,asset.checking,-10\n'
+            '01/15/2021,asset.checking,expense.food,-10\n')
+
+        trans = ledger.load(t1, thisname='asset.checking')
+        trans += ledger.load(t2, thisname='p2')
+
+        dupes = ledger.reportDupes(trans)
+        self.assertEqual(2, len(dupes))
+        for e, a in zip(trans[:2], ledger.transactions):
+            self.assertIs(e, a)
+
+        exp = [
+            (trans[2], 'asset.checking', 'p2'),
+            (trans[3], 'asset.checking', 'p2')]
+
+        for e, a in zip(exp, dupes):
+            t1, o1, a1 = e
+            t2, o2, a2 = a
+
+            self.assertIs(t1, t2)
+            self.assertEqual(o1, o2)
+            self.assertEqual(a1, a2)
+
+    def test_duplicate_window3(self):
+        """ Same as the previous 2, but change the window width.
+        """
+        ledger = Ledger(pcurr, duplicate_window=2)
+
+        orig = (
+            'date,src,dest,amount\n'
+            '2021/01/10,asset.checking,asset.investment,-10\n')
+
+        out = (
+            'date,src,dest,amount\n'
+            '2021/01/12 00:00:01,asset.checking,asset.investment,-10\n')
+
+        # Should flag as duplicate.
+        in_ = (
+            'date,src,dest,amount\n'
+            '2021/01/12,asset.checking,asset.investment,-10\n')
+
+        t = ledger.load(orig, thisname='p1')
+        t += ledger.load(out, thisname='p2')
+        t += ledger.load(in_, thisname='p3')
+
+        self.assertEqual(2, len(ledger.transactions))
+        self.assertEqual(1, len(ledger.reportDupes(t)))
+
+        # Expected transactions.
+        lines = (
+            'date,src,dest,amount\n'
+            '2021/01/10,asset.checking,asset.investment,-10\n'
+            '2021/01/12 00:00:01,asset.checking,asset.investment,-10\n')
+
+        exp = Ledger(pcurr)
+        exp.load(lines)
+
+        for t in exp.transactions:
+            self.assertIn(t, ledger.transactions)
 
 
 if __name__ == '__main__':

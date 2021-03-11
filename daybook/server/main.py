@@ -23,9 +23,10 @@ class Login:
         self.password = password
 
 
-# This ledger never reads from csvs - so we dont care about
-# its primary currency.
-ledger = Ledger(primary_currency='dont-care')
+# This ledger never reads from csvs - so we dont care about its primary
+# currency. Any transactions sent to the ledger should also be empty
+# perspective, so duplicate_window shouldn't matter.
+ledger = Ledger(primary_currency='dont-care', duplicate_window=0)
 login = Login('', '')
 
 

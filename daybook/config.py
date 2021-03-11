@@ -31,6 +31,7 @@ def get_defaults():
         'port': '',
         'username': '',
         'password': '',
+        'duplicate_window': '5',
     }
 
 

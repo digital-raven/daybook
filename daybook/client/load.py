@@ -72,7 +72,7 @@ def group_csvs(root, hints=None):
     return ret
 
 
-def load_from_local(csvs, primary_currency, hints=None):
+def load_from_local(csvs, primary_currency, duplicate_window, hints=None):
     """ Create a ledger from local csvs.
 
     The "CSVs" can be dirs or individual CSVs. Each will be paired with
@@ -82,6 +82,8 @@ def load_from_local(csvs, primary_currency, hints=None):
     Args:
         csvs: List of CSVs that should be loaded.
         primary_currency: Primary currency the resulting ledger should use.
+        duplicate_window: Day range in which duplicate transactions should
+            be detected.  Set to False to never duplicate transactions.
         hints: If provided, then use this singular hints file for each
             CSV, rather than the hints file which otherwise have been
             paired with the CSV.
@@ -102,7 +104,7 @@ def load_from_local(csvs, primary_currency, hints=None):
     if not levels:
         raise ValueError('No CSVs found in specified locations.')
 
-    ledger = Ledger(primary_currency)
+    ledger = Ledger(primary_currency, duplicate_window)
     for level in levels:
         ledger.loadCsvs(level['csvs'], hints or level['hints'])
 
@@ -143,7 +145,7 @@ def load_from_server(args):
     types = ' '.join(types)
     tags = ':'.join(tags)
 
-    ledger = Ledger(args.primary_currency)
+    ledger = Ledger(args.primary_currency, args.duplicate_window)
     dump = server.dump(
         args.username, args.password,
         start, end, accounts, currencies, types, tags)
@@ -179,7 +181,11 @@ def load_from_args(args):
 
     if args.csvs:
         filter_ = create_filter_func(args)
-        ledger = load_from_local(args.csvs, args.primary_currency, hints).filtered(filter_)
+        ledger = load_from_local(
+            args.csvs,
+            args.primary_currency,
+            args.duplicate_window,
+            hints).filtered(filter_)
 
     elif args.hostname and args.port:
         ledger = load_from_server(args)
@@ -187,7 +193,11 @@ def load_from_args(args):
     elif args.ledger_root:
         print('INFO: No server info in config. Loading from ledger_root.')
         filter_ = create_filter_func(args)
-        ledger = load_from_local([args.ledger_root], args.primary_currency, hints).filtered(filter_)
+        ledger = load_from_local(
+            [args.ledger_root],
+            args.primary_currency,
+            args.duplicate_window,
+            hints).filtered(filter_)
 
     else:
         raise ValueError(

@@ -73,6 +73,7 @@ class TestConfig(unittest.TestCase):
             'port': 'config-port',
             'username': 'config-username',
             'password': 'config-password',
+            'duplicate_window': '3',
         }
 
         self.assertEqual(exp, vars(args))
@@ -93,6 +94,7 @@ class TestConfig(unittest.TestCase):
             'port': 'config-port',
             'username': 'config-username',
             'password': 'config-password',
+            'duplicate_window': '3',
         }
 
         self.assertTrue(all([exp[k] == vars(args)[k] for k in exp]))
@@ -115,6 +117,7 @@ class TestConfig(unittest.TestCase):
             'port': '',
             'username': '',
             'password': '',
+            'duplicate_window': '5',
         }
 
         self.assertEqual(exp, vars(args))
@@ -135,6 +138,7 @@ class TestConfig(unittest.TestCase):
             'port': '',
             'username': '',
             'password': '',
+            'duplicate_window': '5',
         }
 
         self.assertEqual(exp, vars(args))
