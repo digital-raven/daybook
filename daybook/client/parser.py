@@ -96,23 +96,10 @@ def create_client_parser():
     # load command
     sp = subparsers.add_parser(
         'load',
-        help='Load transactions from CSV(s).',
+        help='Load transactions from CSV(s) into a daybookd.',
         description=(
             'No transactions will be committed if '
             'any of the CSVs contain an invalid entry.'),
-        parents=[server_opts])
-
-    sp.add_argument(
-        'csvs', metavar='csv',
-        help=(
-            """Specify CSVs to load.
-
-            Directories and regular CSV files may be specified. Directories
-            will be recursively searched. Each directory may contain its own
-            hints, which will overwrite the hints in the previous directory.
-
-            If not provided, then daybook will use the CSVs within ledger_root.
-            """),
-        nargs='*')
+        parents=[csv_opts, server_opts, filter_opts])
 
     return parser
