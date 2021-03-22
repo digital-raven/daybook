@@ -4,7 +4,7 @@
 import sys
 
 from daybook.client import client
-from daybook.client.load import load_from_local
+from daybook.client.load import load_from_args
 
 
 def do_load(args):
@@ -25,7 +25,7 @@ def do_load(args):
 
     try:
         server = client.open(args.hostname, args.port)
-        ledger = load_from_local(args.csvs, args.primary_currency)
+        ledger = load_from_args(args)
     except (ConnectionRefusedError, FileNotFoundError, ValueError) as e:
         print(e)
         sys.exit(1)
