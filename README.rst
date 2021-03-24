@@ -10,7 +10,7 @@ The machine used to develop this software was running Ubuntu 20.04. The
 following packages are needed to build, develop, and package releases on
 this operating system.
 
-    python3-venv python3-pip dh-python
+    python3-venv python3-pip dh-python docutils-common
 
 Maintenance
 ===========
