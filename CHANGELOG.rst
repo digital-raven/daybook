@@ -6,8 +6,16 @@ All notable changes to daybook will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
-[unreleased]
-============
+[1.0.0-alpha] - 2021-03-24
+==========================
+There are several feature additions and behavioral changes from the previous
+release. The largest of note is that a running instance of daybookd is no longer
+required to generate dumps and reports, and duplicate transaction detection is
+much more sophisticated than the previous version.
+
+This release also introduces the "add" and "balance" subcommands, automatic
+note generation, and changed the expected format of transactions and account
+names in CSV lines.
 
 Added
 -----
