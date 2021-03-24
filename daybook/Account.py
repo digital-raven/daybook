@@ -12,16 +12,16 @@ class Account:
         asset => Accounts that have a positive effect on your net worth.
         expense => Accounts that track money spent on consumable goods.
         income => Track sources of income. eg. your employer.
-        investment => Use this for brokerage accounts.
         liability => Debts, which have a negative effect on your net worth.
         receivable => Money owed to you.
+        void => Create or destroy funds.
+            eg. Set a starting balance for a checking account.
     """
 
     types = [
         'asset',
         'expense',
         'income',
-        'investment',
         'liability',
         'receivable',
         'void',

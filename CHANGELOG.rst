@@ -58,6 +58,7 @@ Removed
 - The "last currency" behavior. If a currency is missing from a transaction,
   then only the primary currency will be suggested. Good riddance to this
   "helpful" feature.
+- "investment" is no longer a valid accout type. Seemed redundant with "asset".
 
 [0.1.0-alpha] - 2020-02-09
 ==========================
