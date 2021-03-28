@@ -73,7 +73,8 @@ def create_client_parser():
     # clear command
     sp = subparsers.add_parser(
         'clear',
-        help='Clear the ledger.')
+        help="Clear the user's ledger.",
+        parents=[server_opts])
 
     # dump command
     sp = subparsers.add_parser(
