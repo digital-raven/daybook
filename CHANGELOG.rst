@@ -6,6 +6,16 @@ All notable changes to daybook will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
+[1.1.0-alpha] - 2021-04-07
+==========================
+Added
+-----
+- Man pages written and integrated into package installation.
+
+Fixed
+-----
+- Added server options to the "clear" subcommand.
+
 [1.0.0-alpha] - 2021-03-24
 ==========================
 There are several feature additions and behavioral changes from the previous
