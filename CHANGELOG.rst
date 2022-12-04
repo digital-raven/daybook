@@ -12,6 +12,7 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 Added
 -----
 - New "convert" subcommand.
+- "budget" subcommand.
 - ``--version`` option to print version of daybook and logic to pull version
   from git tags.
 - The user-specific daybook.ini is now created with comments.
