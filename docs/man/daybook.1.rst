@@ -634,6 +634,7 @@ SEE ALSO
 daybook-add(1),
 daybook-balance(1),
 daybook-clear(1),
+daybook-convert(1),
 daybook-dump(1),
 daybook-expense(1),
 daybook-load(1),

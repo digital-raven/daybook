@@ -11,14 +11,15 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 Added
 -----
+- New "convert" subcommand.
 - ``--version`` option to print version of daybook and logic to pull version
   from git tags.
 - The user-specific daybook.ini is now created with comments.
+- Documented installation locations of manpages and tab-autocomplete script.
 
 Fixed
 -----
-- Installation of data files when using pip --user. This affects the
-  destination of these files with deb and regular pip though...
+- Installation of data files when using pip --user.
 
 Removed
 -------
