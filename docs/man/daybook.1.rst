@@ -47,6 +47,11 @@ expects for its input. Daybook's subcommands use the information in these CSVs
 to create useful reports. Each subcommand has its own man page. These are
 referenced in the **SEE ALSO** section.
 
+AUTO-COMPLETE
+=============
+daybook features tab-autocompletion. Source the file ``daybook_completion.sh``,
+which will be installed to either ``/usr/etc`` or ``~/.local/usr/etc`` .
+
 OPTIONS
 =======
 These global options must be specified before the subcommand.
