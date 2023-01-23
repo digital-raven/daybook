@@ -19,6 +19,10 @@ Fixed
 - Installation of data files when using pip --user. This affects the
   destination of these files with deb and regular pip though...
 
+Removed
+-------
+- Debian packaging support. Just use pip.
+
 [1.1.0-alpha] - 2021-04-07
 ==========================
 Added
