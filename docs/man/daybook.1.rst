@@ -62,6 +62,9 @@ These global options must be specified before the subcommand.
 **--primary-currency** *CURRENCY*
         Override the primary_currency in the configuration file.
 
+**--version**
+        Print the version of daybook.
+
 **-h, --help**
         Print the help message for Daybook.
 
