@@ -6,10 +6,7 @@ Hello and welcome to daybook, a command line accounting program.
 
 Documentation
 =============
-Read the man pages in ``./docs/man`` for usage and examples. These will
-be installed to ``/usr/share/man`` if installing from deb or to
-``~/.local/usr/share/man`` if using pip with the ``--user`` option. Update
-your ``MANPATH`` accordingly.
+Read the man pages in ``./docs/man`` for usage and examples.
 
 Required packages for a developer
 =================================
@@ -19,7 +16,7 @@ this operating system.
 
 ::
 
-    python3-venv python3-pip dh-python docutils-common
+    python3-venv python3-pip docutils-common
 
 Maintenance
 ===========
@@ -29,19 +26,17 @@ automatically determine the version based on git-describe.
 
 Building and installation
 =========================
-Use the ``package.bash`` script to create releases. It can release the software
-as a python wheel, deb, rpm, or simply a gz archive with the respective
-commands.
+Clone this repo, checkout a release tag, and run these commands.
 
 ::
 
-    ./package.bash python
-    ./package.bash deb
-    ./package.bash rpm
-    ./package.bash gz
-
-    # Clean the directory.
+    ./package.bash python3
+    pip3 install --user .
     ./package.bash clean
+
+Manpages will be installed to ``$HOME/.local/usr/share/man`` and the completion
+script will be installed under ``$HOME/.local/etc/bash_completion.d``. Update your
+``MANPATH`` and bashrc accordingly.
 
 Testing and developer usage
 ===========================

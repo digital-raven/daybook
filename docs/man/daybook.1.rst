@@ -47,10 +47,14 @@ expects for its input. Daybook's subcommands use the information in these CSVs
 to create useful reports. Each subcommand has its own man page. These are
 referenced in the **SEE ALSO** section.
 
-AUTO-COMPLETE
-=============
-daybook features tab-autocompletion. Source the file ``daybook_completion.sh``,
-which will be installed to either ``/usr/etc`` or ``~/.local/usr/etc`` .
+AUTO-COMPLETE AND MANPAGE LOCATIONS
+===================================
+If daybook was installed with ``pip3 --user`` then the man pages will be
+installed under ``$HOME/.local/usr/share/man`` and the bash completion script
+will be installed under ``$HOME/.local/etc/bash_completion.d``
+
+If that isn't 100% correct because python changed installation structure or
+something then go find them yourself. I believe in you!
 
 OPTIONS
 =======
