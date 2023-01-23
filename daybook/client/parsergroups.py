@@ -81,3 +81,8 @@ def create_server_opts():
         '--port', help='Port where daybookd is listening.')
 
     return parser
+
+
+csv_opts = create_csv_opts()
+filter_opts = create_filter_opts()
+server_opts = create_server_opts()

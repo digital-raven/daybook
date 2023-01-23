@@ -5,7 +5,7 @@ import argparse
 import sys
 
 from daybook import __version__
-from daybook.client.parsergroups import create_csv_opts, create_filter_opts, create_server_opts
+from daybook.client.cli import build_out_subparsers
 
 
 def print_version():
@@ -23,10 +23,6 @@ def create_client_parser():
         Reference to the parser. Parse main command line args with
             parser.parse_args().
     """
-    csv_opts = create_csv_opts()
-    filter_opts = create_filter_opts()
-    server_opts = create_server_opts()
-
     parser = argparse.ArgumentParser(
         prog='daybook',
         description=(
@@ -52,69 +48,6 @@ def create_client_parser():
         dest='command',
         description='Each has its own [-h, --help] statement.')
 
-    # add command
-    sp = subparsers.add_parser(
-        'add',
-        help='Add a transaction to a CSV.')
-
-    sp.add_argument(
-        'csv', help='Specify the CSV which will append the transaction.')
-
-    sp.add_argument(
-        '--hints',
-        help='Specify a hints file. If not provided, then daybook will '
-             'attempt to use a hints file in the same directory as the CSV.')
-
-    group = sp.add_argument_group(
-        'heading options',
-        'Use these to pre-fill values as command line arguments. They will '
-        'only be used if the respective headings are present in the CSV.')
-    group.add_argument('--date', help='The date on which the transactino took place.')
-    group.add_argument('--src', help='Name of the source account.')
-    group.add_argument('--dest', help='Name of the destintion account.')
-    group.add_argument('--amount', help='The amount and currencies sent and received to / from each account.')
-    group.add_argument('--tags', help='Tags for the transaction. Enter like "tag1:tag2:tag3"')
-    group.add_argument('--notes', help='Free-form notes on the transaction.')
-
-    # balance command
-    sp = subparsers.add_parser(
-        'balance',
-        help='Print balances of accounts.',
-        description='If any CSVs are specified, then this command will '
-                    'use those transactions instead of daybookd.',
-        parents=[csv_opts, server_opts, filter_opts])
-
-    # clear command
-    sp = subparsers.add_parser(
-        'clear',
-        help="Clear the user's ledger.",
-        parents=[server_opts])
-
-    # dump command
-    sp = subparsers.add_parser(
-        'dump',
-        help='Dump transactions to stdout as a raw csv.',
-        description='If any CSVs are specified, then this command will '
-                    'use those transactions instead of daybookd.',
-        parents=[csv_opts, server_opts, filter_opts])
-
-    # expense command
-    sp = subparsers.add_parser(
-        'expense',
-        help=(
-            'Generate an expense report. The default behavior is to use '
-            'the current month.'),
-        description='If any CSVs are specified, then this command will '
-                    'use those transactions instead of daybookd.',
-        parents=[csv_opts, server_opts, filter_opts])
-
-    # load command
-    sp = subparsers.add_parser(
-        'load',
-        help='Load transactions from CSV(s) into a daybookd.',
-        description=(
-            'No transactions will be committed if '
-            'any of the CSVs contain an invalid entry.'),
-        parents=[csv_opts, server_opts, filter_opts])
+    build_out_subparsers(subparsers)
 
     return parser

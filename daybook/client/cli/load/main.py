@@ -7,7 +7,7 @@ from daybook.client import client
 from daybook.client.load import load_from_args
 
 
-def do_load(args):
+def main(args):
     """ Load a local ledger with CSVs and send to daybookd.
     """
     if not args.csvs:

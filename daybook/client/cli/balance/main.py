@@ -8,7 +8,7 @@ from prettytable import PrettyTable
 from daybook.client.load import load_from_args
 
 
-def do_balance(args):
+def main(args):
     """ Entry point for balance subcommand.
     """
     try:

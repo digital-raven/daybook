@@ -23,7 +23,7 @@ def get_fieldnames(csv_):
         return reader.fieldnames
 
 
-def do_add(args):
+def main(args):
     """ Entry point for the add subcommand.
 
     The csv and hints file are parsed so that the ledger contains

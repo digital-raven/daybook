@@ -8,7 +8,7 @@ import sys
 from daybook.client.load import load_from_args
 
 
-def do_dump(args):
+def main(args):
     """ Retrieve transactions from daybookd as a raw csv string.
     """
     try:

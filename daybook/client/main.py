@@ -50,10 +50,8 @@ def main():
         print('ERROR: No primary_currency in {}'.format(args.config))
         sys.exit(1)
 
-    subcommand = importlib.import_module(
-        'daybook.client.cli.{}'.format(args.command))
-
-    subcommand = getattr(subcommand, 'do_{}'.format(args.command))
+    subcommand = importlib.import_module('daybook.client.cli.{}.main'.format(args.command))
+    subcommand = getattr(subcommand, 'main'.format(args.command))
 
     try:
         subcommand(args)
