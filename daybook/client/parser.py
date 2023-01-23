@@ -2,8 +2,18 @@
 """
 
 import argparse
+import sys
 
+from daybook import __version__
 from daybook.client.parsergroups import create_csv_opts, create_filter_opts, create_server_opts
+
+
+def print_version():
+    class printVersion(argparse.Action):
+        def __call__(self, parser, args, values, option_string=None):
+            print(__version__)
+            sys.exit(0)
+    return printVersion
 
 
 def create_client_parser():
@@ -31,6 +41,10 @@ def create_client_parser():
         '--primary-currency',
         metavar='CURRENCY',
         help='Override primary_currency in config.')
+
+    parser.add_argument(
+        '--version', nargs=0, help='Print the version of daybook and exit.',
+        action=print_version())
 
     # begin subparsers
     subparsers = parser.add_subparsers(

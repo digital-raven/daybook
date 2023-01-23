@@ -1,4 +1,5 @@
 import os
+import subprocess as sp
 from setuptools import setup, find_packages
 from os import path
 
@@ -23,9 +24,11 @@ if 'DEBBUILD' not in os.environ:
         'prettytable',
     ]
 
+version=sp.check_output(['git','describe','--tags'], text=True).strip()
+
 setup(
     name='daybook',
-    version='1.1.0-alpha',
+    version=version,
     description='A command line ledger.',
     long_description=long_description,
     long_description_content_type='text/markdown',

@@ -9,6 +9,11 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 [unreleased]
 ============
 
+Added
+-----
+- ``--version`` option to print version of daybook and logic to pull version
+  from git tags.
+
 Fixed
 -----
 - Installation of data files when using pip --user. This affects the

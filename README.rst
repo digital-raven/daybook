@@ -23,7 +23,9 @@ this operating system.
 
 Maintenance
 ===========
-When releasing, update the version in DEBIAN/control and setup.py.
+Update the CHANGELOG when cutting a new release, then create and push a git tag
+named after the new version. This project's packaging script and setup.py will
+automatically determine the version based on git-describe.
 
 Building and installation
 =========================
