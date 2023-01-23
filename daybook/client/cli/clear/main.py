@@ -6,7 +6,7 @@ import sys
 from daybook.client import client
 
 
-def do_clear(args):
+def main(args):
     """ Command server to clear its ledger.
     """
     try:

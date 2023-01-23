@@ -10,7 +10,7 @@ from prettytable import PrettyTable
 from daybook.client.load import load_from_args
 
 
-def do_expense(args):
+def main(args):
     """ Entry point for the expense subcommand.
     """
     # set start date for current month
