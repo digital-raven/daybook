@@ -13,6 +13,7 @@ Added
 -----
 - ``--version`` option to print version of daybook and logic to pull version
   from git tags.
+- The user-specific daybook.ini is now created with comments.
 
 Fixed
 -----
