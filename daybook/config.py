@@ -3,13 +3,12 @@
 
 import configparser
 import os
-import random
-import string
 from collections import defaultdict, namedtuple
 from pathlib import Path
 
+from daybook.configs.default import create_default_ini
 
-default_conf = '/etc/daybook/default.ini'
+
 user_confdir = '{}/.config/daybook'.format(Path.home())
 user_conf = '{}/daybook.ini'.format(user_confdir)
 
@@ -38,39 +37,20 @@ def get_defaults():
 def do_first_time_setup():
     """ Create ledger root and copy default.ini to user conf path.
     """
-    charset = string.ascii_lowercase + string.ascii_uppercase + string.digits
-
-    # use these vals to create user config if not present in system defaults.
-    default_vals = get_defaults()
-    default_vals['ledger_root'] = '{}/.local/share/daybook'.format(Path.home())
-    default_vals['primary_currency'] = 'usd'
-    default_vals['hostname'] = 'localhost'
-    default_vals['port'] = random.randint(5000, 15000)
-    default_vals['username'] = ''.join(
-        random.SystemRandom().choice(charset) for _ in range(20))
-    default_vals['password'] = ''.join(
-        random.SystemRandom().choice(charset) for _ in range(20))
-
-    cp = configparser.ConfigParser()
-
-    # create empty string as conf if system default does not exist.
-    if os.path.exists(default_conf):
-        cp.read(default_conf)
-    else:
-        cp.read_string('[default]')
-
-    # substitute hardcoded defaults for any absent values.
-    for key in default_vals:
-        if key not in cp['default'] or not cp['default'][key]:
-            cp['default'][key] = str(default_vals[key])
 
     try:
         os.makedirs(user_confdir)
     except FileExistsError:
         pass
 
+    # Write user-specific ini with comments.
+    ini = create_default_ini()
     with open(user_conf, 'w') as f:
-        cp.write(f)
+        f.write(ini)
+
+    # Create ledger root
+    cp = configparser.ConfigParser()
+    cp.read_string(ini)
 
     try:
         os.makedirs(cp['default']['ledger_root'])
