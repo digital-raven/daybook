@@ -93,7 +93,11 @@ def main(args):
     # this gets printed
     rows = []
     for file in args.csvs:
-        rows.extend(convert_csv(rules, file))
+        try:
+            rows.extend(convert_csv(rules, file))
+        except KeyError as e:
+            print(f'ERROR: {file} is missing a {e} key')
+            sys.exit(1)
 
     # write to stdout
     writer = csv.DictWriter(sys.stdout, fieldnames=list(rules.keys()))
