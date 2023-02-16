@@ -2,105 +2,154 @@
 """
 
 import csv
+import importlib
+import os
 import sys
-from collections import defaultdict
-
-import yaml
+from pathlib import Path
 
 
-def convert(swaps, orig):
-    """ Convert a dictionary based on a swap dict.
-
-    eg.
-
-    orig = {key1: red, key2: blue, unused: green}
-    swaps = {Favorite: key2, 2ndFavorite: key1}
-
-    return = {Favorite: blue, 2ndFavorite: red}
+def convert_csv(file, convert_row, headings=''):
+    """ Convert rows of a csv.
 
     Args:
-        swaps: The values in swaps correspond to the keys in d. The keys
-            in swaps will hold the values in d.
-        d: The dictionary to operate on and convert.
-
-    Returns:
-        A new dictionary with the swapped keys.
-
-    Raises:
-        KeyError if a key wasn't present in orig.
-    """
-    return {k: orig[v] for k, v in swaps.items()}
-
-
-def convert_csv(swaps, file):
-    """ Convert all rows of a csv.
-
-    Args:
-        swaps: See convert
         file: Path to csv.
+        convert_row: See convert_csvs.
+        headings: Optional headings to add.
 
     Returns:
-        An in-order list of converted dicts.
+        A list of strings representing converted csv rows.
 
     Raises:
-        OSError if file could not be opened.
-        KeyError from convert.
+        OSError if file couldn't be read.
+
+        If the convert_row function has anything wrong with it
+        then that exception will be raised as well.
     """
-    rows = []
+    rows = [headings] if headings else []
+
     with open(file) as f:
         reader = csv.DictReader(f)
         for row in reader:
-            rows.append(convert(swaps, row))
+            rows.append(convert_row(row))
 
     return rows
 
 
-def get_rules(file):
-    """ Return rules as a dict
+def convert_csvs(csvs, convert_row, headings=''):
+    """ Convert CSV rows according to the convert_row function
 
     Args:
-        file: Yaml file to open.
+        csvs: List of CSV files to convert.
+        convert_row: A function that accepts a row of a CSV as a dict.
+            Keys will be the column headings in the CSV and values are
+            the values in the cells.
+
+            This function needs to return a str.
+
+        headings: Headings that should be printed.
 
     Returns:
-        Rules as a dictionary.
+        List of rows representing converted CSV.
 
     Raises:
-        OSError if file could not be opened.
-        ValueError if file was not in valid yaml format.
+        OSError if a csv couldn't be opened.
     """
-    # Load rules first
-    with open(file) as f:
-        rules = yaml.safe_load(f.read())
+    rows = [headings] if headings else []
 
-    if type(rules) is not dict:
-        raise ValueError(f'{file} is not in valid yaml')
+    for file in csvs:
+        rows.extend(convert_csv(file, convert_row))
 
-    return rules
+    return rows
+
+
+def import_single_py(pyfile):
+    """ Import a single python file.
+
+    May litter __pycache__ dirs around the place.
+
+    Args:
+        pyfile: Path to python3 code to import.
+
+    Returns:
+        module, pycache: The return from importlib.__import__ and a path
+        to the __pycache__ file. Maybe your application wants to delete
+        this afterwords.
+
+    Raises:
+        ModuleNotFoundError if the pyfile doesn't exist.
+    """
+    absdir = Path(pyfile).parent.absolute()
+    basename = os.path.basename(pyfile)
+
+    try:
+        sys.path = [os.path.abspath(absdir)] + sys.path
+        module = ''.join(basename.split('.py')[0:])
+        module = importlib.__import__(module)
+    finally:
+        sys.path = sys.path[1:]
+
+    return module, str(absdir) + os.path.sep + '__pycache__'
+
+
+def import_converter(pyfile):
+    """ Import the converter module
+
+    Same as import_single_py, but enforces some conventions.
+
+    Args:
+        pyfile: Python file to import.
+
+    Returns:
+        headings attr from pyfile. Must be a string.
+        convert_row attr from pyfile. Must be a function that accepts
+            a single arg as a dict.
+        pycache: A path to the __pycache__ that will be created. The
+            caller needs to remove this.
+
+    Raises:
+        OSError if pyfile doesn't exist.
+        KeyError if pyfile didn't have a headings string or
+            convert_row function.
+        TypeError if headings was not a str.
+    """
+    try:
+        convert_module, pycache = import_single_py(pyfile)
+    except ModuleNotFoundError:
+        raise OSError(f"ERROR: {pyfile} doesn't exist.")
+
+    try:
+        headings = convert_module.__dict__['headings']
+    except KeyError:
+        raise KeyError(f'ERROR: The module {pyfile} needs to have a "headings" member.')
+
+    if type(headings) is not str:
+        raise TypeError(f'ERROR: The "headings" in {pyfile} needs to be a string')
+
+    try:
+        convert_row = convert_module.__dict__['convert_row']
+    except KeyError:
+        raise KeyError(f'ERROR: The module {pyfile} needs to have a "convert_row" function.')
+
+    return headings, convert_row, pycache
 
 
 def main(args):
-    """ Convert a spreadsheet's columns according to a rules file.
+    """ Convert a spreadsheet's columns according to a converter file.
     """
+    if not args.converter.endswith('.py'):
+        print(f'ERROR: {args.converter} must be a python file.')
+        sys.exit(1)
+
     try:
-        rules = get_rules(args.rules)
+        headings, convert_row, _ = import_converter(args.converter)
+    except (KeyError, OSError, TypeError) as e:
+        print(e)
+        sys.exit(1)
+
+    try:
+        rows = convert_csvs(args.csvs, convert_row, headings)
     except OSError as e:
-        print(f'ERROR: Could not open {args.rules}: {e}')
-        sys.exit(1)
-    except ValueError as e:
-        print(f'ERROR: {e}')
+        print(e)
         sys.exit(1)
 
-    # this gets printed
-    rows = []
-    for file in args.csvs:
-        try:
-            rows.extend(convert_csv(rules, file))
-        except KeyError as e:
-            print(f'ERROR: {file} is missing a {e} key')
-            sys.exit(1)
-
-    # write to stdout
-    writer = csv.DictWriter(sys.stdout, fieldnames=list(rules.keys()))
-
-    writer.writeheader()
-    writer.writerows(rows)
+    print('\n'.join(rows))
