@@ -1,74 +1,97 @@
 import os
 import unittest
 
-from daybook.client.cli.convert.main import convert, convert_csv, get_rules
+from daybook.client.cli.convert.main import (
+    convert_csv, convert_csvs, import_single_py, import_converter)
 
 
 resources = f'{os.path.dirname(__file__)}/resources/convert'
 
 
+def convert_row(row):
+    return 'local convert_row'
+
+
 class TestConvert(unittest.TestCase):
     """ Test Convert and convert CSV functions.
     """
-    def test_convert(self):
-        """ Simple swap test.
-
-        Order shoul also depend on swaps
+    def test_import_single_py(self):
+        """ Test importing a test python3 file.
         """
-        orig = {
-            'k1': 'v1',
-            'k2': 'v2',
-        }
+        module, _ = import_single_py(f'{resources}/test.py')
+        self.assertEqual('hello there', module.hello)
 
-        swaps = {
-            'key2': 'k2',
-            'key1': 'k1',
-        }
+        with self.assertRaises(ModuleNotFoundError):
+            import_single_py(f'{resources}/not-exist.py')
 
-        exp = {
-            'key2': 'v2',
-            'key1': 'v1',
-        }
-
-        act = convert(swaps, orig)
-        self.assertEqual(exp, act)
-
-        self.assertEqual(['key2', 'key1'], list(act.keys()))
-
-    def test_get_rules(self):
-        """ Verify rules file can be read from valid yaml.
+    def test_import_converter(self):
+        """ The same as import_single_py but check for 2 fields.
         """
-        exp = {
-            'Greeting': 'greeting',
-            'Response': 'response',
-        }
-        act = get_rules(f'{resources}/rules.yaml')
+        headings, convert_row, _ = import_converter(f'{resources}/good_convert.py')
+        self.assertEqual('headings', headings)
+        self.assertEqual('some string', convert_row(None))
 
-        self.assertEqual(exp, act)
-
-    def test_get_rules_bad_yaml(self):
-        """ get_rules should raise ValueError on bad yaml
-        """
-        with self.assertRaises(ValueError):
-            get_rules(f'{resources}/bad-rules.yaml')
-
-    def test_get_rules_file_not_found(self):
-        """ Verify rules file can be read from valid yaml.
+    def test_import_converter_doesnt_exist(self):
+        """ Should raise OSError if pyfile doesn't exist.
         """
         with self.assertRaises(OSError):
-            get_rules(f'{resources}/doesnt-exist.yaml')
+            _, _, _ = import_converter(f'{resources}/doesnt_exist.py')
+
+    def test_import_converter_bad_headings(self):
+        """ headings needs to be a str.
+        """
+        with self.assertRaises(TypeError):
+            _, _, _ = import_converter(f'{resources}/bad_convert_headings.py')
+
+    def test_import_converter_missing_headings(self):
+        """ convert_row should be present.
+        """
+        with self.assertRaises(KeyError):
+            _, _, _ = import_converter(f'{resources}/bad_convert_missing_headings.py')
+
+    def test_import_converter_missing_convert_row(self):
+        """ convert_row should be present.
+        """
+        with self.assertRaises(KeyError):
+            _, _, _ = import_converter(f'{resources}/bad_convert_missing_convert_row.py')
 
     def test_convert_csv(self):
-        """ Verify rules file can be read from valid yaml.
+        """ A CSV should be converted based on headings and convert_row.
         """
-        rules = get_rules(f'{resources}/rules.yaml')
-        act = convert_csv(rules, f'{resources}/greetings.csv')
+        file = f'{resources}/greetings.csv'
+        rows = convert_csv(file, convert_row, 'headings')
+
         exp = [
-                {'Greeting': 'hello', 'Response': 'goodbye'},
-                {'Greeting': 'hola', 'Response': 'adios'},
+            'headings',
+            'local convert_row',
+            'local convert_row',
         ]
 
-        self.assertEqual(exp, act)
+        self.assertEqual(exp, rows)
+
+    def test_convert_csv_not_found(self):
+        """ Should raise OSError if file not found.
+        """
+        file = f'{resources}/not-exist.csv'
+
+        with self.assertRaises(OSError):
+            rows = convert_csv(file, convert_row, 'headings')
+
+    def test_convert_csvs(self):
+        """ A CSV should be converted based on headings and convert_row.
+        """
+        file = f'{resources}/greetings.csv'
+        rows = convert_csvs([file, file], convert_row, 'headings')
+
+        exp = [
+            'headings',
+            'local convert_row',
+            'local convert_row',
+            'local convert_row',
+            'local convert_row',
+        ]
+
+        self.assertEqual(exp, rows)
 
 
 if __name__ == '__main__':
