@@ -2,7 +2,8 @@ import os
 import unittest
 
 from daybook.client.cli.convert.main import (
-    convert_csv, convert_csvs, import_single_py, import_converter)
+    convert_csv, convert_csvs, import_converter)
+from daybook.util.importer import import_single_py
 
 
 resources = f'{os.path.dirname(__file__)}/resources/convert'
