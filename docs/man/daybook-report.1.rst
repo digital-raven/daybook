@@ -12,15 +12,17 @@ Display a report
 SYNOPSIS
 ========
 
-**daybook** [global-opts] **report** [options]
+**daybook** [global-opts] **report** *reporter* [options]
 
 DESCRIPTION
 ===========
-Daybook provides a framework for generating your own financial reports based
-on your transactions and budgets. The report subcommand takes care of loading
-the transactions and calling the function.
+Daybook provides a framework for generating one's own financial reports based
+on transactions and budgets. The report subcommand takes care of loading the
+transactions and calling the function.
 
-Daybook also supplies preset reports.
+The *reporter* module may be a compatible module found in the locations
+specified by the ``DAYBOOK_REPORTERS`` enviornment variable, or it can be
+the file path to a custom one.
 
 OPTIONS
 =======
@@ -30,16 +32,6 @@ These options must be specified after the subcommand.
         List of budget files. Multiple budgets may be provided. If more than
         one budget is provided, then the amounts associated with each account
         will be added. See the examples for what these look like.
-
-**--list**
-        List available report presets. Presets may be found in the locations
-        specified by daybook_report_path in the configuration file.
-
-**--description**
-        Print the description of the reporter module.
-
-**--reporter** *reporter.py*
-        Path to reporter python3 script. See above for examples.
 
 **-h**, **--help**
         Display a help message and exit.

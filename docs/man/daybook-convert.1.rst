@@ -12,7 +12,7 @@ Convert a CSV to daybook format
 SYNOPSIS
 ========
 
-**daybook** [global-opts] **convert** [options]
+**daybook** [global-opts] **convert** *converter* [options]
 
 DESCRIPTION
 ===========
@@ -21,9 +21,8 @@ This command converts a CSV to daybook format.
 Daybook provides a framework for writing ones own converter function to
 ease manual importing of CSVs from an institution. Users may write their
 own converter modules by following the guidelines in this manpage, or
-they may select one of the presets provided by daybook. Presets may be
-selected from the locations specified in ``daybook_convert_path`` in
-the daybook configuration ini.
+they may select one of the presets provided by daybook. Daybook searches
+the locations specified in the ``DAYBOOK_CONVERTERS`` environment variable.
 
 OPTIONS
 =======
@@ -31,15 +30,6 @@ These options must be specified after the subcommand.
 
 **--csvs** *CSV* [*CSV*...]
         List of CSV files to convert.
-
-**--list**
-        List available converter modules.
-
-**--description**
-        Print the description of the selected converter.
-
-**--converter** *converter.py*
-        Path to converter python3 script. See the examples.
 
 **-h**, **--help**
         Display a help message and exit.
@@ -107,13 +97,11 @@ output to a file.
 And asset.checking.csv will contain the rows in daybook's format.
 
 While this example is trivial, financial instituions like Schwab and Fidelity
-will often do odd things like splitting up amounts into two columns depending
-on if the transaction was a withdrawal or deposit, or brokerage firms will
-separate out the stock ticker symbol into its own cell. Being able to format
-these rows using arbitraty python3 scripting is very useful, and allows the
-scripts to be reused month after month.
+will often do odd things with their CSV exports. Being able to format these rows
+using arbitraty python3 scripting is very useful, and allows the scripts to be
+reused month after month.
 
-The converter.py file is stock python3. The only rules it needs to follow are
+The converter.py modules are stock python3. The only rules it needs to follow are
 the presence of a headings string and a convert_row function that accepts one
 dict argument and returns a string.
 

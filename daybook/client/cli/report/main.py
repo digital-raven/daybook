@@ -4,8 +4,6 @@ import os
 import sys
 from pathlib import Path
 
-from prettytable import PrettyTable
-
 from daybook.Budget import load_budgets
 from daybook.client.load import load_from_args, readdir_
 from daybook.util.importer import import_single_py
@@ -35,7 +33,7 @@ def find_reporter(pyfile, paths):
 
     for path in paths:
         _, _, files = readdir_(path)
-        files = [x for x in files if '.py' in x]
+        files = [x for x in files if x.endswith('.py')]
         if pyfile in files:
             return import_reporter(f'{path}/{pyfile}')
 
@@ -66,7 +64,7 @@ def import_reporter(pyfile):
     try:
         report_module, pycache = import_single_py(pyfile)
     except ModuleNotFoundError:
-        raise OSError(f"ERROR: {pyfile} doesn't exist.")
+        raise OSError(f"ERROR: {pyfile} not found.")
 
     d = report_module.__dict__
 
@@ -92,7 +90,7 @@ def import_reporters(paths):
 
     Returns:
         A dict where the key is the basename (no .py extension) of the module
-        and the values are the same as returned by import_reporter..
+        and the values are the same as returned by import_reporter.
 
     Raises:
         ValueError if any path wasn't a directory.
@@ -100,58 +98,24 @@ def import_reporters(paths):
     modules = {}
     for path in paths:
         _, _, files = readdir_(path)
-        files = [x for x in files if '.py' in x and x not in modules]
+        files = [x for x in files if x.endswith('.py')]
         for f in files:
-            try:
-                modules[f.split('.py')[0]] = import_reporter(f'{path}/{f}')
-            except KeyError:
-                pass
+            basename = f.split('.py')[0]
+            if basename not in modules:
+                try:
+                    modules[basename] = import_reporter(f'{path}/{f}')
+                except KeyError:
+                    pass
 
     return modules
-
-
-def list_reporters(paths):
-    """ List available reporters in the path.
-
-    Args:
-        path: List of dirs to check.
-    """
-    pt = PrettyTable()
-    pt.field_names = ['Reporter', 'Help']
-    pt.align = 'l'
-
-    modules = import_reporters(paths)
-
-    for name, tupe in modules.items():
-        help, _, _, _ = tupe
-        pt.add_row([name, help])
-
-    print(pt, '\n')
 
 
 def main(args):
     """ Generate a report on transactions sent to a reporter module.
     """
-
-    # Set up paths to search
-    if 'DAYBOOK_REPORTERS' not in os.environ:
-        os.environ['DAYBOOK_REPORTERS'] = f'./:{Path.home()}/.local/usr/share/daybook/presets/report'
-
-    paths = os.environ['DAYBOOK_REPORTERS'].split(':')
-
-    # List available reporters.
-    if args.list:
-        print(f'INFO: DAYBOOK_REPORTERS={os.environ["DAYBOOK_REPORTERS"]}')
-        try:
-            list_reporters(paths)
-        except ValueError as e:
-            print(e)
-            sys.exit(1)
-        sys.exit(0)
-
-    if not args.reporter:
-        print('ERROR: Provide a reporter via --reporter .')
-        sys.exit(1)
+    paths = ['./']
+    if 'DAYBOOK_REPORTERS' in os.environ:
+        paths = os.environ['DAYBOOK_REPORTERS'].split(':')
 
     # Load reporter module
     reporter = args.reporter
@@ -163,12 +127,6 @@ def main(args):
     except (KeyError, OSError, TypeError, ValueError) as e:
         print(e)
         sys.exit(1)
-
-    # Print description if desired.
-    if args.description:
-        print(f'{args.reporter}: {help}', '\n')
-        print(description)
-        sys.exit(0)
 
     # Else load transactions and print report.
     try:
