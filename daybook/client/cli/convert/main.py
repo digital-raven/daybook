@@ -90,7 +90,7 @@ def find_converter(pyfile, paths):
 
     for path in paths:
         _, _, files = readdir_(path)
-        files = [x for x in files if '.py' in x]
+        files = [x for x in files if x.endswith('.py')]
         if pyfile in files:
             return import_converter(f'{path}/{pyfile}')
 
@@ -166,33 +166,16 @@ def import_converters(paths):
     modules = {}
     for path in paths:
         _, _, files = readdir_(path)
-        files = [x for x in files if '.py' in x and x not in modules]
+        files = [x for x in files if x.endswith('.py')]
         for f in files:
-            try:
-                modules[f.split('.py')[0]] = import_converter(f'{path}/{f}')
-            except KeyError:
-                pass
+            basename = f.split('.py')[0]
+            if basename not in modules:
+                try:
+                    modules[basename] = import_converter(f'{path}/{f}')
+                except KeyError:
+                    pass
 
     return modules
-
-
-def list_converters(paths):
-    """ List available converters in the path.
-
-    Args:
-        path: List of dirs to check.
-    """
-    pt = PrettyTable()
-    pt.field_names = ['Converter', 'Help']
-    pt.align = 'l'
-
-    modules = import_converters(paths)
-
-    for name, tupe in modules.items():
-        help, _, _, _, _ = tupe
-        pt.add_row([name, help])
-
-    print(pt, '\n')
 
 
 def main(args):
@@ -200,19 +183,9 @@ def main(args):
     """
 
     # Set up paths to search
-    if 'DAYBOOK_CONVERTERS' not in os.environ:
-        os.environ['DAYBOOK_CONVERTERS'] = f'./:{Path.home()}/.local/usr/share/daybook/presets/convert'
-
-    paths = os.environ['DAYBOOK_CONVERTERS'].split(':')
-
-    if args.list:
-        print(f'INFO: DAYBOOK_CONVERTERS={os.environ["DAYBOOK_CONVERTERS"]}')
-        list_converters(paths)
-        sys.exit(0)
-
-    if not args.converter:
-        print('ERROR: Provide a converter via --converter .')
-        sys.exit(1)
+    paths = ['./']
+    if 'DAYBOOK_CONVERTERS' in os.environ:
+        paths = os.environ['DAYBOOK_CONVERTERS'].split(':')
 
     # Search the path for the module if module still not found.
     converter = args.converter
@@ -220,15 +193,10 @@ def main(args):
         converter += '.py'
 
     try:
-        help, description, headings, convert_row, _ = find_converter(converter)
+        help, description, headings, convert_row, _ = find_converter(converter, paths)
     except (KeyError, OSError, TypeError) as e:
         print(e)
         sys.exit(1)
-
-    if args.description:
-        print(f'{args.converter}: {help}', '\n')
-        print(description)
-        sys.exit(0)
 
     if not args.csvs:
         print('ERROR: No files to convert. Specify --csvs .')

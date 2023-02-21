@@ -4,6 +4,7 @@
 import importlib
 import os
 import sys
+from pathlib import Path
 
 import argcomplete
 
@@ -11,7 +12,57 @@ import daybook.client.parser
 from daybook.config import add_config_args, do_first_time_setup, user_conf
 
 
+def setup_reporters(args):
+    """ Pre-process sys.argv to allow for pointing at custom reporters.
+    """
+    idx = [i for i, x in enumerate(args) if x.endswith('.py')]
+    if not idx:
+        return
+    idx = idx[0]
+
+    pyfile = args[idx]
+
+    dir_ = '/'.join(pyfile.split('/')[:-1])
+    if not dir_:
+        dir_ = os.getcwd()
+
+    os.environ['DAYBOOK_REPORTERS'] = dir_
+
+    basename = pyfile.split('/')[-1]
+    basename = basename.replace('.py', '').strip()
+
+    args[idx] = basename
+
+
+def setup_converters(args):
+    """ Pre-process sys.argv to allow for pointing at custom converters.
+    """
+    idx = [i for i, x in enumerate(args) if x.endswith('.py')]
+    if not idx:
+        return
+    idx = idx[0]
+
+    pyfile = args[idx]
+
+    dir_ = '/'.join(pyfile.split('/')[:-1])
+    if not dir_:
+        dir_ = os.getcwd()
+
+    os.environ['DAYBOOK_CONVERTERS'] = dir_
+
+    basename = pyfile.split('/')[-1]
+    basename = basename.replace('.py', '').strip()
+
+    args[idx] = basename
+
+
 def main():
+
+    if 'convert' in sys.argv:
+        setup_converters(sys.argv)
+    elif 'report' in sys.argv:
+        setup_reporters(sys.argv)
+
     parser = daybook.client.parser.create_client_parser()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
