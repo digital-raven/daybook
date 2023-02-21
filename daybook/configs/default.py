@@ -44,7 +44,7 @@ def create_default_ini():
     """
     charset = string.ascii_lowercase + string.ascii_uppercase + string.digits
 
-    ledger_root = f'{Path.home()}/.local/share/daybook'
+    ledger_root = f'{Path.home()}/.local/share/daybook/ledger'
     port = random.randint(5000, 15000)
     username = ''.join(random.SystemRandom().choice(charset) for _ in range(20))
     password = ''.join(random.SystemRandom().choice(charset) for _ in range(20))

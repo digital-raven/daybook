@@ -2,9 +2,14 @@
 """
 
 import csv
+import os
 import sys
+from pathlib import Path
 
 from daybook.util.importer import import_single_py
+from daybook.client.load import readdir_
+
+from prettytable import PrettyTable
 
 
 def convert_csv(file, convert_row, headings=''):
@@ -61,6 +66,37 @@ def convert_csvs(csvs, convert_row, headings=''):
     return rows
 
 
+def find_converter(pyfile, paths):
+    """ Search paths for a converter module
+
+    If pyfile is an exact match on its own then no paths will be searched.
+
+    Args:
+        pyfile: Exact name of pyfile to serach for.
+        paths: List of dirs to search.
+
+    Returns:
+        See import_converter.
+
+    Raises:
+        See import_converter.
+
+        OSError if pyfile wasn't found in any path.
+
+        ValueError if any path wasn't a directory.
+    """
+    if os.path.isfile(pyfile):
+        return import_converter(pyfile)
+
+    for path in paths:
+        _, _, files = readdir_(path)
+        files = [x for x in files if '.py' in x]
+        if pyfile in files:
+            return import_converter(f'{path}/{pyfile}')
+
+    raise OSError(f'{pyfile} not found in any of {paths}')
+
+
 def import_converter(pyfile):
     """ Import the converter module
 
@@ -70,11 +106,14 @@ def import_converter(pyfile):
         pyfile: Python file to import.
 
     Returns:
-        headings attr from pyfile. Must be a string.
-        convert_row attr from pyfile. Must be a function that accepts
-            a single arg as a dict.
+        help, description, headings, convert_row, pycache
+
+        help: Optional short description.
+        description: Optional long description.
+        headings: attr from pyfile. Must be a string.
+        convert_row: Function that accepts a single arg as a dict.
         pycache: A path to the __pycache__ that will be created. The
-            caller needs to remove this.
+            caller may opt to remove this.
 
     Raises:
         OSError if pyfile doesn't exist.
@@ -87,8 +126,10 @@ def import_converter(pyfile):
     except ModuleNotFoundError:
         raise OSError(f"ERROR: {pyfile} doesn't exist.")
 
+    d = convert_module.__dict__
+
     try:
-        headings = convert_module.__dict__['headings']
+        headings = d['headings']
     except KeyError:
         raise KeyError(f'ERROR: The module {pyfile} needs to have a "headings" member.')
 
@@ -96,24 +137,101 @@ def import_converter(pyfile):
         raise TypeError(f'ERROR: The "headings" in {pyfile} needs to be a string')
 
     try:
-        convert_row = convert_module.__dict__['convert_row']
+        convert_row = d['convert_row']
     except KeyError:
         raise KeyError(f'ERROR: The module {pyfile} needs to have a "convert_row" function.')
 
-    return headings, convert_row, pycache
+    help = d['help'].strip() if 'help' in d else ''
+    description = d['description'].strip() if 'description' in d else ''
+
+    return help, description, headings, convert_row, pycache
+
+
+def import_converters(paths):
+    """ Import all converter modules found in paths.
+
+    If two modules have the same name then the one found earlier in the
+    paths takes precedence.
+
+    Args:
+        path: List of dirs to check.
+
+    Returns:
+        A dict where the key is the basename (no .py extension) of the module
+        and the values are the same as returned by import_converter.
+
+    Raises:
+        ValueError if any path wasn't a directory.
+    """
+    modules = {}
+    for path in paths:
+        _, _, files = readdir_(path)
+        files = [x for x in files if '.py' in x and x not in modules]
+        for f in files:
+            try:
+                modules[f.split('.py')[0]] = import_converter(f'{path}/{f}')
+            except KeyError:
+                pass
+
+    return modules
+
+
+def list_converters(paths):
+    """ List available converters in the path.
+
+    Args:
+        path: List of dirs to check.
+    """
+    pt = PrettyTable()
+    pt.field_names = ['Converter', 'Help']
+    pt.align = 'l'
+
+    modules = import_converters(paths)
+
+    for name, tupe in modules.items():
+        help, _, _, _, _ = tupe
+        pt.add_row([name, help])
+
+    print(pt, '\n')
 
 
 def main(args):
     """ Convert a spreadsheet's columns according to a converter file.
     """
-    if not args.converter.endswith('.py'):
-        print(f'ERROR: {args.converter} must be a python file.')
+
+    # Set up paths to search
+    if 'DAYBOOK_CONVERTERS' not in os.environ:
+        os.environ['DAYBOOK_CONVERTERS'] = f'./:{Path.home()}/.local/usr/share/daybook/presets/convert'
+
+    paths = os.environ['DAYBOOK_CONVERTERS'].split(':')
+
+    if args.list:
+        print(f'INFO: DAYBOOK_CONVERTERS={os.environ["DAYBOOK_CONVERTERS"]}')
+        list_converters(paths)
+        sys.exit(0)
+
+    if not args.converter:
+        print('ERROR: Provide a converter via --converter .')
         sys.exit(1)
 
+    # Search the path for the module if module still not found.
+    converter = args.converter
+    if not converter.endswith('.py'):
+        converter += '.py'
+
     try:
-        headings, convert_row, _ = import_converter(args.converter)
+        help, description, headings, convert_row, _ = find_converter(converter)
     except (KeyError, OSError, TypeError) as e:
         print(e)
+        sys.exit(1)
+
+    if args.description:
+        print(f'{args.converter}: {help}', '\n')
+        print(description)
+        sys.exit(0)
+
+    if not args.csvs:
+        print('ERROR: No files to convert. Specify --csvs .')
         sys.exit(1)
 
     try:

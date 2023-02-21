@@ -14,9 +14,19 @@ def add_subparser(subparsers):
         parents=[csv_opts, server_opts, filter_opts])
 
     sp.add_argument(
-        '--reporter', required=True,
+        '--list', action='store_true',
         help=(
-            'Path to reporter module. This is a python3 script with a '
-            'report(ledger, budget) function which returns a report string.'))
+            'List available report presets. These may be found in the paths '
+            'specified by the "DAYBOOK_REPORTERS" environment variable.'))
+
+    sp.add_argument(
+        '--description', action='store_true',
+        help="Print the reporter's description.")
 
     sp.add_argument('-b', '--budgets', help='List of budget files.', nargs='*')
+
+    sp.add_argument(
+        '--reporter',
+        help=(
+            'Select a reporter module. This is a python3 script with a '
+            'report(ledger, budget) function which returns a string.'))

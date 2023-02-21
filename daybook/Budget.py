@@ -47,7 +47,10 @@ def load_budgets(files):
             s = f.read().split('---')[1]
             d = yaml.safe_load(s)
 
-        for k, v in d['budget'].items():
+        if 'budget' in d:
+            d = d['budget']
+
+        for k, v in d.items():
             budget[k] += v
 
     # {type}.misc is for transactions not categorized in the budgets.

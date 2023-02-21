@@ -18,6 +18,32 @@ DESCRIPTION
 ===========
 This command converts a CSV to daybook format.
 
+Daybook provides a framework for writing ones own converter function to
+ease manual importing of CSVs from an institution. Users may write their
+own converter modules by following the guidelines in this manpage, or
+they may select one of the presets provided by daybook. Presets may be
+selected from the locations specified in ``daybook_convert_path`` in
+the daybook configuration ini.
+
+OPTIONS
+=======
+These options must be specified after the subcommand.
+
+**--csvs** *CSV* [*CSV*...]
+        List of CSV files to convert.
+
+**--list**
+        List available converter modules.
+
+**--description**
+        Print the description of the selected converter.
+
+**--converter** *converter.py*
+        Path to converter python3 script. See the examples.
+
+**-h**, **--help**
+        Display a help message and exit.
+
 EXAMPLES
 ========
 Different financial institutions export their CSVs in different formats.
@@ -39,13 +65,22 @@ Create a converter script that follows this convention
 
     # converter.py, but this file can be named whatever you want.
 
-    # Headings for CSV
+    # (optional) Short description
+    help = 'Converter for Mybanks CSVs'
+
+    # (optional) Longer, potentially multi-line description.
+    description = '''
+    Mybank has upcased date and amount fields, and uses a Description heading
+    to describe the vendor. This module fixes that.
+    '''
+
+    # Headings for CSV.
     headings = 'date,dest,notes,amount'
 
     # Converter function. Must be called convert_row and accept a single
     # parameter as a dict.
     #
-    # The str it returns represents the converted row
+    # The str it returns represents the converted row.
     def convert_row(row):
         date = row['Date']
         dest = row['Description']
@@ -81,19 +116,6 @@ scripts to be reused month after month.
 The converter.py file is stock python3. The only rules it needs to follow are
 the presence of a headings string and a convert_row function that accepts one
 dict argument and returns a string.
-
-OPTIONS
-=======
-These options must be specified after the subcommand.
-
-**--csvs** *CSV* [*CSV*...]
-        List of CSV files to convert.
-
-**--converter** *converter.py*
-        Path to converter python3 script. See above for examples.
-
-**-h**, **--help**
-        Display a help message and exit.
 
 SEE ALSO
 ========
