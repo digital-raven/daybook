@@ -1,33 +1,18 @@
-""" Entry point for the "expense" subcommand.
-"""
-
-import sys
 from collections import defaultdict
 
 import datetime
 from prettytable import PrettyTable
 
-from daybook.client.load import load_from_args
+help = 'Basic expense report.'
 
 
-def main(args):
-    """ Entry point for the expense subcommand.
-    """
-    # set start date for current month
-    if not args.start and not args.end and not args.range:
-        args.start = datetime.date.today()
-        args.start = args.start.replace(day=1)
-        args.start = str(args.start)
+description = '''
+Show income vs expenses for all loaded transactions.
+'''
 
-    if not args.types:
-        args.types.extend(['expense', 'income'])
 
-    # load the ledger
-    try:
-        ledger = load_from_args(args)
-    except (ConnectionRefusedError, FileNotFoundError, ValueError) as e:
-        print(e)
-        sys.exit(1)
+def report(ledger, budget):
+    ret = []
 
     # income table
     pt = PrettyTable()
@@ -41,8 +26,9 @@ def main(args):
             balances.append('{}: {}'.format(cur, -balance))
 
         pt.add_row([name, '\n'.join(balances)])
-    print('Income')
-    print(pt, '\n')
+    ret.append('Income')
+    ret.append(str(pt))
+    ret.append('')
 
     # expense table
     pt = PrettyTable()
@@ -56,8 +42,9 @@ def main(args):
             balances.append('{}: {}'.format(cur, balance))
 
         pt.add_row([name, '\n'.join(balances)])
-    print('Expenses')
-    print(pt, '\n')
+    ret.append('Expenses')
+    ret.append(str(pt))
+    ret.append('')
 
     # total cash flow
     pt = PrettyTable()
@@ -75,5 +62,8 @@ def main(args):
     for cur, balance in balances.items():
         pt.add_row([cur, balance])
 
-    print('Cash flow')
-    print(pt, '\n')
+    ret.append('Cash flow')
+    ret.append(str(pt))
+    ret.append('')
+
+    return '\n'.join(ret)

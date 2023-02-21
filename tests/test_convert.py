@@ -28,7 +28,7 @@ class TestConvert(unittest.TestCase):
     def test_import_converter(self):
         """ The same as import_single_py but check for 2 fields.
         """
-        headings, convert_row, _ = import_converter(f'{resources}/good_convert.py')
+        _, _, headings, convert_row, _ = import_converter(f'{resources}/good_convert.py')
         self.assertEqual('headings', headings)
         self.assertEqual('some string', convert_row(None))
 
@@ -36,25 +36,25 @@ class TestConvert(unittest.TestCase):
         """ Should raise OSError if pyfile doesn't exist.
         """
         with self.assertRaises(OSError):
-            _, _, _ = import_converter(f'{resources}/doesnt_exist.py')
+            _, _, _, _, _ = import_converter(f'{resources}/doesnt_exist.py')
 
     def test_import_converter_bad_headings(self):
         """ headings needs to be a str.
         """
         with self.assertRaises(TypeError):
-            _, _, _ = import_converter(f'{resources}/bad_convert_headings.py')
+            _, _, _, _, _ = import_converter(f'{resources}/bad_convert_headings.py')
 
     def test_import_converter_missing_headings(self):
         """ convert_row should be present.
         """
         with self.assertRaises(KeyError):
-            _, _, _ = import_converter(f'{resources}/bad_convert_missing_headings.py')
+            _, _, _, _, _ = import_converter(f'{resources}/bad_convert_missing_headings.py')
 
     def test_import_converter_missing_convert_row(self):
         """ convert_row should be present.
         """
         with self.assertRaises(KeyError):
-            _, _, _ = import_converter(f'{resources}/bad_convert_missing_convert_row.py')
+            _, _, _, _, _ = import_converter(f'{resources}/bad_convert_missing_convert_row.py')
 
     def test_convert_csv(self):
         """ A CSV should be converted based on headings and convert_row.

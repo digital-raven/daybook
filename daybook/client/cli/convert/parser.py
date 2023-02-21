@@ -6,10 +6,20 @@ def add_subparser(subparsers):
 
     sp.add_argument(
         '--csvs', metavar='CSV',
-        help='Specify CSVs or directories to load.', nargs='+', required=True)
+        help='CSVs to convert.', nargs='+')
 
     sp.add_argument(
-        '--converter', required=True,
+        '--list', action='store_true',
+        help=(
+            'List available report presets. These may be found in the paths '
+            'specified by the "DAYBOOK_REPORTERS" environment variable.'))
+
+    sp.add_argument(
+        '--description', action='store_true',
+        help="Print the converter's description.")
+
+    sp.add_argument(
+        '--converter',
         help=(
             'Path to conversion module. This is a python3 script with a '
             'headings string member and a convert_row(row) function which '

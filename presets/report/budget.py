@@ -1,26 +1,19 @@
-""" budget subcommand.
-"""
-
 import sys
 from collections import defaultdict
 
 from prettytable import PrettyTable
 
-from daybook.client.load import load_from_args
-from daybook.Budget import load_budgets
+
+help = 'Budget report'
+
+description = '''
+Print a budget vs the actual expenses.
+'''
 
 
-def main(args):
-    """ Entry point for budget subcommand.
+def report(ledger, budget):
+    """ Basic budget report.
     """
-    try:
-        ledger = load_from_args(args)
-    except (ConnectionRefusedError, FileNotFoundError, ValueError) as e:
-        print(e)
-        sys.exit(1)
-
-    budget = load_budgets(args.budgets)
-
     deltas = defaultdict(lambda: 0)
     deltas.update(budget)
     unaccounted = {}
@@ -28,7 +21,7 @@ def main(args):
     # Compute differences
     for name in sorted(ledger.accounts):
         account = ledger.accounts[name]
-        balance = account.balances[args.primary_currency]
+        balance = account.balances[ledger.primary_currency]
 
         deltas[account.name] += balance
 
@@ -64,5 +57,4 @@ def main(args):
     act.add_rows(misc_rows)
 
     # Print tables
-    print(exp)
-    print(act)
+    return ''.join([str(exp), '\n', str(act)])

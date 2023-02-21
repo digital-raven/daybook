@@ -1,23 +1,17 @@
-""" balance subcommand.
-"""
-
-import sys
-
 from prettytable import PrettyTable
 
-from daybook.client.load import load_from_args
+
+help = 'Total balance report.'
 
 
-def main(args):
-    """ Entry point for balance subcommand.
+description = '''
+Tally the balances of all accounts.
+'''
+
+
+def report(ledger, budget):
+    """ Create a total balance report.
     """
-    try:
-        ledger = load_from_args(args)
-    except (ConnectionRefusedError, FileNotFoundError, ValueError) as e:
-        print(e)
-        sys.exit(1)
-
-    # balance table
     pt = PrettyTable()
     pt.field_names = ['Account', 'Balance']
     pt.align['Account'] = 'l'
@@ -31,4 +25,4 @@ def main(args):
 
         pt.add_row([name, '\n'.join(balances)])
 
-    print(pt, '\n')
+    return str(pt) + '\n'

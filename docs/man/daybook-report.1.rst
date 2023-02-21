@@ -17,10 +17,45 @@ SYNOPSIS
 DESCRIPTION
 ===========
 Daybook provides a framework for generating your own financial reports based
-on your transactions and budgets. This command can point at 
+on your transactions and budgets. The report subcommand takes care of loading
+the transactions and calling the function.
 
-Writing your own report function
+Daybook also supplies preset reports.
+
+OPTIONS
+=======
+These options must be specified after the subcommand.
+
+**-b**, **--budgets** *BUDGET* [*BUDGET*...]
+        List of budget files. Multiple budgets may be provided. If more than
+        one budget is provided, then the amounts associated with each account
+        will be added. See the examples for what these look like.
+
+**--list**
+        List available report presets. Presets may be found in the locations
+        specified by daybook_report_path in the configuration file.
+
+**--description**
+        Print the description of the reporter module.
+
+**--reporter** *reporter.py*
+        Path to reporter python3 script. See above for examples.
+
+**-h**, **--help**
+        Display a help message and exit.
+
+.. include:: _daybook-csv-opts.rst
+.. include:: _daybook-server-opts.rst
+.. include:: _daybook-filter-opts.rst
+
+Writing your own reporter module
 ================================
+A reporter module is a single python3 script that has the following attrs.
+
+- help: A short description of the module. Printed with **--list**.
+- description: A long description printed with **--description**.
+- report(ledger, budget): A function which accepts a Ledger and budget.
+
 To create your own report function, you need to understand the ledger and
 budget references. These are pretty simple.
 
@@ -70,6 +105,25 @@ budget
 This is a simple dictionary where the keys are account names and the values are
 floats representing how much money each should have.
 
+Budgets are loaded from files which begin with a yaml data block. These files
+may be in any format as long as this block is present. The budget may be under
+a "budget" key within the yaml, but if that isn't present then the whole block
+will be considered the budget. Here's an example in a markdown file.
+
+::
+
+        ---
+        budget:
+          income.myjob: -5000
+          expense.grocery: 300
+          liability.mortgage: 1000
+          expense.computer: 1500
+        ---
+
+    ## Notes
+    I've decided to spend 1500 on a gaming PC this month.
+
+
 EXAMPLES
 ========
 Here are some simple example report functions, but remember that the report
@@ -78,7 +132,14 @@ reports may be as simple, or complex, as you wish.
 
 ::
 
-    # report.py, but this file can be named whatever you want.
+    # ./expense.py, but this file can be named whatever you want.
+
+    help = 'A simple expense report.'
+
+    description = '''
+    This report tallies all dollars spent on expense accounts for
+    the supplied transactions.
+    '''
 
     # Report function. Must be called "report" and accept a ledger
     # and budget reference.
@@ -87,39 +148,7 @@ reports may be as simple, or complex, as you wish.
 
         return f'You spent ${expenses} this month.'
 
-
-    # This one prints income minus expenses.
-    def report(ledger, budget):
-        income = sum([x.balances['usd'] for x in ledger.accounts if 'income' in x.name else 0])
-        expenses = sum([x.balances['usd'] for x in ledger.accounts if 'expenses' in x.name else 0])
-
-        # income accounts have negative balances and expenses have positives.
-        return f'You made ${-income - expenses}'
-
-
-    # Print balances of transactions involving a particular stock.
-    def report(ledger, budget):
-        stock_balances = sum(x.balances['SAP500'] for x in ledger.accounts if 'SAP500' in x.balances else 0])
-
-        return f'You own {stock_balances} shares of SAP500'
-
-
-OPTIONS
-=======
-These options must be specified after the subcommand.
-
-**--csvs** *CSV* [*CSV*...]
-        List of CSV files to load transactions from.
-
-**-b**, **--budgets** *BUDGET* [*BUDGET*...]
-        List of files to load a budget from. See the examples for what
-        one of these needs to look like.
-
-**--reporter** *reporter.py*
-        Path to reporter python3 script. See above for examples.
-
-**-h**, **--help**
-        Display a help message and exit.
+And then we would use this report with ``daybook report --csvs ./mycsvs/ --reporter ./expense.py``
 
 SEE ALSO
 ========
