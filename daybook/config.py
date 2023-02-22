@@ -26,10 +26,6 @@ def get_defaults():
     return {
         'ledger_root': './',
         'primary_currency': '',
-        'hostname': '',
-        'port': '',
-        'username': '',
-        'password': '',
         'duplicate_window': '5',
     }
 
