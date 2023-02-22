@@ -95,6 +95,30 @@ General options regarding the interpretation of transactions.
         is the case for two transactions, then the second transaction will be
         automatically ignored during loading.
 
+Server Options
+--------------
+These are for connecting to a daybookd server. This can store transactions
+in memory in case repeated operations on CSVs in the filesystem are too slow.
+See the daybookd man page for more information.
+
+Do not regard this server as secure or as something that should be hosted
+remotely. The plaintext username and password in daybook.ini should be proof
+enough of that.
+
+**hostname**
+        Hostname where a daybookd server is listening. Defaults to "localhost".
+
+**port**
+        Port on which daybookd is listening.
+
+**username**
+        Username for the daybookd server. The server will automatically create
+        an account for usernames when they load transactions.
+
+**password**
+        Password for the username. The daybookd will reject your attempt to
+        connect if the password does not match the associated username.
+
 EXAMPLES
 ========
 This section details what inputs are expected for each field of a transaction
@@ -608,6 +632,9 @@ always be required. No software in the world can avoid that.
 SEE ALSO
 ========
 daybook-add(1),
+daybook-clear(1),
 daybook-convert(1),
 daybook-dump(1),
+daybook-load(1),
 daybook-report(1),
+daybookd(1)

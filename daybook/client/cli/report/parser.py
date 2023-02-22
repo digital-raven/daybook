@@ -2,7 +2,7 @@ import os
 from argparse import RawDescriptionHelpFormatter
 from pathlib import Path
 
-from daybook.client.parsergroups import create_csv_opts, create_filter_opts
+from daybook.client.parsergroups import create_csv_opts, create_filter_opts, create_server_opts
 from daybook.client.cli.report.main import import_reporters
 
 
@@ -33,6 +33,7 @@ def add_reporter_subparsers(subparsers, parents):
 def add_subparser(subparsers):
     csv_opts = create_csv_opts()
     filter_opts = create_filter_opts()
+    server_opts = create_server_opts()
 
     desc = f"""
     The report subcommand generates reports by sending transactions to a
@@ -59,4 +60,4 @@ def add_subparser(subparsers):
         dest='reporter',
         description='Available reporters. Each has its own [-h, --help] statement.')
 
-    add_reporter_subparsers(reporters, [csv_opts, filter_opts])
+    add_reporter_subparsers(reporters, [csv_opts, server_opts, filter_opts])

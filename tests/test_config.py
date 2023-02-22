@@ -54,6 +54,7 @@ class TestConfig(unittest.TestCase):
         exp.update({
             'ledger_root': 'config-root',
             'primary_currency': 'config-currency',
+            'hostname': 'config-host',
         })
 
         self.assertEqual(exp, vars(args))
@@ -68,6 +69,10 @@ class TestConfig(unittest.TestCase):
         exp = {
             'ledger_root': 'config-root',
             'primary_currency': 'config-currency',
+            'hostname': 'config-host',
+            'port': 'config-port',
+            'username': 'config-username',
+            'password': 'config-password',
             'duplicate_window': '3',
         }
 
@@ -85,6 +90,10 @@ class TestConfig(unittest.TestCase):
         exp = {
             'ledger_root': 'config-root',
             'primary_currency': 'config-currency',
+            'hostname': 'config-host',
+            'port': 'config-port',
+            'username': 'config-username',
+            'password': 'config-password',
             'duplicate_window': '3',
         }
 
@@ -96,14 +105,18 @@ class TestConfig(unittest.TestCase):
         """ values already in args should not be overwritten...
         """
         args = MockArgs()
-        args.primary_currency = 'mycur'
+        args.hostname = 'args-host'
 
         config = resources + '/some-params.ini'
         add_config_args(args, config)
 
         exp = {
             'ledger_root': 'config-root',
-            'primary_currency': 'mycur',
+            'primary_currency': 'config-currency',
+            'hostname': 'args-host',
+            'port': '',
+            'username': '',
+            'password': '',
             'duplicate_window': '5',
         }
 
@@ -113,7 +126,7 @@ class TestConfig(unittest.TestCase):
         """ ... unless those values are set but empty.
         """
         args = MockArgs()
-        args.primary_currency = ''
+        args.hostname = ''
 
         config = resources + '/some-params.ini'
         add_config_args(args, config)
@@ -121,6 +134,10 @@ class TestConfig(unittest.TestCase):
         exp = {
             'ledger_root': 'config-root',
             'primary_currency': 'config-currency',
+            'hostname': 'config-host',
+            'port': '',
+            'username': '',
+            'password': '',
             'duplicate_window': '5',
         }
 
