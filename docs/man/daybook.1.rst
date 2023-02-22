@@ -607,7 +607,6 @@ always be required. No software in the world can avoid that.
 
 SEE ALSO
 ========
-daybook-add(1),
 daybook-convert(1),
 daybook-dump(1),
 daybook-report(1),
