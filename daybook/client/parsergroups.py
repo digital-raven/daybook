@@ -71,5 +71,18 @@ def create_filter_opts():
     return parser
 
 
+def create_server_opts():
+    parser = argparse.ArgumentParser(add_help=False)
+    group = parser.add_argument_group(
+        'server options', 'Select hostname and port for daybookd.')
+    group.add_argument(
+        '--hostname', help='Hostname of daybookd.')
+    group.add_argument(
+        '--port', help='Port where daybookd is listening.')
+
+    return parser
+
+
 csv_opts = create_csv_opts()
 filter_opts = create_filter_opts()
+server_opts = create_server_opts()
