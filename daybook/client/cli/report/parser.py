@@ -7,7 +7,7 @@ from daybook.client.cli.report.main import import_reporters
 
 
 presets_base = f'{Path.home()}/.local/usr/share/daybook/presets'
-default_presets = f'{os.getcwd()}:{presets_base}/report'
+default_presets = f'{presets_base}/report'
 
 
 def add_reporter_subparsers(subparsers, parents):
@@ -35,16 +35,12 @@ def add_subparser(subparsers):
     filter_opts = create_filter_opts()
 
     desc = f"""
-    The report subcommand generates reports by sending transactions to a
-    reporter module. This module may be one listed below, or a path to an
-    module on the filesystem.
+    The report subcommand generates reports by calling a reporter module.
+    The reporter may be one listed below, or a path to a custom reporter.
+    See the manpage for instructions to write a custom reporter.
 
-    The reporter modules are found in the locations specified by the
-    DAYBOOK_REPORTERS environment variable. If this variable is not set
-    then it defaults to ./:$HOME/.local/usr/share/daybook/presets/report
-
-    See the manpage for daybook-report for details on writing custom
-    reporters.
+    Alternate reporter locations may be specified by the DAYBOOK_REPORTERS
+    environment variable.
     """.splitlines()
     desc = '\n'.join([x.strip() for x in desc])
 

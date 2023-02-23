@@ -6,7 +6,7 @@ from daybook.client.cli.convert.main import import_converters
 
 
 presets_base = f'{Path.home()}/.local/usr/share/daybook/presets'
-default_presets = f'{os.getcwd()}:{presets_base}/convert'
+default_presets = f'{presets_base}/convert'
 
 
 def add_converter_subparsers(subparsers):
@@ -34,16 +34,13 @@ def add_converter_subparsers(subparsers):
 def add_subparser(subparsers):
 
     desc = f"""
-    The convert subcommand is used to convert spreadsheets from financial
-    institutions into compatible daybook format. The converter may be
-    one of the presets listed below, or a path to an arbitrary one.
+    The convert subcommand converts CSVs to daybook's format by calling a
+    converter module. The converter may be one listed below, or a path to a
+    custom one. See the manpage for instructions to write a custom conversion
+    module.
 
-    The converter modules are found in the locations specified by the
-    DAYBOOK_CONVERTERS environment variable. If this variable isn't set
-    then it defaults to ./:$HOME/.local/usr/share/daybook/presets/convert
-
-    See the manpage for daybook-convert for details on writing custom
-    converters.
+    Alternate converter locations may be specified by the DAYBOOK_CONVERTERS
+    environment variable.
     """.splitlines()
 
     desc = '\n'.join([x.strip() for x in desc])
