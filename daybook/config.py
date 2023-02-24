@@ -24,7 +24,6 @@ def get_defaults():
         daybook configuration file.
     """
     return {
-        'ledger_root': './',
         'primary_currency': '',
         'duplicate_window': '5',
     }
@@ -47,11 +46,6 @@ def do_first_time_setup():
     # Create ledger root
     cp = configparser.ConfigParser()
     cp.read_string(ini)
-
-    try:
-        os.makedirs(cp['default']['ledger_root'])
-    except FileExistsError:
-        pass
 
 
 def add_config_args(args, config=None):

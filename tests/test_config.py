@@ -52,7 +52,6 @@ class TestConfig(unittest.TestCase):
 
         exp = get_defaults()
         exp.update({
-            'ledger_root': 'config-root',
             'primary_currency': 'config-currency',
         })
 
@@ -66,7 +65,6 @@ class TestConfig(unittest.TestCase):
         add_config_args(args, config)
 
         exp = {
-            'ledger_root': 'config-root',
             'primary_currency': 'config-currency',
             'duplicate_window': '3',
         }
@@ -83,7 +81,6 @@ class TestConfig(unittest.TestCase):
         add_config_args(args, config)
 
         exp = {
-            'ledger_root': 'config-root',
             'primary_currency': 'config-currency',
             'duplicate_window': '3',
         }
@@ -102,7 +99,6 @@ class TestConfig(unittest.TestCase):
         add_config_args(args, config)
 
         exp = {
-            'ledger_root': 'config-root',
             'primary_currency': 'mycur',
             'duplicate_window': '5',
         }
@@ -119,7 +115,6 @@ class TestConfig(unittest.TestCase):
         add_config_args(args, config)
 
         exp = {
-            'ledger_root': 'config-root',
             'primary_currency': 'config-currency',
             'duplicate_window': '5',
         }
