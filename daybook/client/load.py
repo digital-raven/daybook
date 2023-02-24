@@ -3,7 +3,6 @@
 
 import os
 
-from daybook.client.filtering import create_filter_func, format_filter_args
 from daybook.Hints import Hints
 from daybook.Ledger import Ledger
 
@@ -131,21 +130,19 @@ def load_from_args(args):
     hints = Hints(args.hints) if args.hints else None
 
     if args.csvs:
-        filter_ = create_filter_func(args)
         ledger = load_from_local(
             args.csvs,
             args.primary_currency,
             args.duplicate_window,
-            hints).filtered(filter_)
+            hints).filtered(args.filter)
 
     elif args.ledger_root:
         print(f'INFO: No CSVs specified. Loading from {args.ledger_root}.')
-        filter_ = create_filter_func(args)
         ledger = load_from_local(
             [args.ledger_root],
             args.primary_currency,
             args.duplicate_window,
-            hints).filtered(filter_)
+            hints).filtered(args.filter)
 
     else:
         raise ValueError(

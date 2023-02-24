@@ -2,27 +2,17 @@ FILTER OPTIONS
 --------------
 Options for filtering output in commands.
 
-**--start** *DATE*
-        Filter for transactions after a date.
+**--filter** *filter*
+        Provide a python3 conditional expression to filter transactions on.
+        Each transaction is referenced by the letter 't'.
 
-**--end** *DATE*
-        Filter for transactions before a date.
+        eg. To filter on each transaction after the first of this month.
 
-**--range** *RANGE*
-        Provide this with --start to filter within a date range. Can be
-        human-readable. eg. "1 month", or "2 weeks"
+            --filter "t.date > 'first of last month'"
 
-**--accounts** *NAME* [*NAME* ...]
-        Filter for transactions involving the specified account names.
+        Or to see all transactions with "expense" involved in the accounts.
 
-**--currencies** *CURRENCY* [*CURRENCY* ...]
-        Filter for transactions involving certain currencies.
+            --filter "'expense' in t.accounts"
 
-**--types** *TYPE* [*TYPE* ...]
-        Filter for transactions that involved an account of the matching type.
-        Valid entries are "asset", "expense", "income", "liability",
-        "receivable", and "void".
-
-**--tags** *TAGS*
-        Filter for transactions that involve specific tags. These should be
-        provided as a single colon-separated string.
+        See the documentation for the report subcommand to learn about
+        the attributes in a transaction class.

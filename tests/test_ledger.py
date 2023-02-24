@@ -597,9 +597,9 @@ class TestLedger(unittest.TestCase):
 
         lines = (
             'date,src,dest,amount\n'
-            '14/02/15,asset.investment,asset.checking,-10\n'
-            '14/02/15,asset.checking,expense.food,-10\n'
-            '14/02/15,asset.checking,expense.food,-10\n')
+            '2/14/15,asset.investment,asset.checking,-10\n'
+            '2/14/15,asset.checking,expense.food,-10\n'
+            '2/14/15,asset.checking,expense.food,-10\n')
 
         exp.load(lines)
         ledger1.load(lines)

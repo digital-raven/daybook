@@ -26,7 +26,6 @@ These options must be specified after the subcommand.
         Display a help message and exit.
 
 .. include:: _daybook-csv-opts.rst
-.. include:: _daybook-server-opts.rst
 .. include:: _daybook-filter-opts.rst
 
 EXAMPLES
