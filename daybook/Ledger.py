@@ -5,65 +5,12 @@ import csv
 import io
 import os
 
-import dateutil.parser
+from superdate import SuperDate
 
 from daybook.Account import Account
 from daybook.Amount import Amount
 from daybook.Transaction import Transaction
 from daybook.util.DupeTracker import DupeTracker
-
-
-def in_start(start, t):
-    return not start or start <= t.date
-
-
-def in_end(end, t):
-    return not end or t.date <= end
-
-
-def in_accounts(accounts, t):
-    return not accounts or t.src.name in accounts or t.dest.name in accounts
-
-
-def in_currencies(currencies, t):
-    expected = [t.amount.src_currency, t.amount.dest_currency]
-    return not currencies or any([e in currencies for e in expected])
-
-
-def in_types(types, t):
-    return not types or t.src.type in types or t.dest.type in types
-
-
-def in_tags(tags, t):
-    return not tags or len(tags.intersection(t.tags)) > 0
-
-
-def basic_filter(t, start, end, accounts, currencies, types, tags):
-    """ Return True if transaction matches the criterion.
-
-    Arguments that are None are treated as dont-cares.
-
-    Use like this to utilize a basic filtering functionality on ledger dumps.
-
-        ledger.dump(lambda x: basic_filter(x, start, end...))
-
-    Args:
-        t: The Transaction to test.
-        start: Reject if t.date is earlier than this datetime.
-        end: Reject if t.date is later than this datetime.
-        accounts: Reject if t.src and t.dest are not in this
-            list of account times.
-        types: Reject t if neither involved account's type is in this
-            list of Account types.
-        tags: Reject t if none of its tags are in this list.
-    """
-    return (
-        in_start(start, t)
-        and in_end(end, t)
-        and in_accounts(accounts, t)
-        and in_currencies(currencies, t)
-        and in_types(types, t)
-        and in_tags(tags, t))
 
 
 def suggest_notes(src, dest, amount):
@@ -131,7 +78,7 @@ class Ledger:
         for key, val in self.accounts.items():
             val.transactions.sort()
 
-    def dump(self, func=lambda x: True):
+    def dump(self, filter=lambda x: True):
         """ Dump contents of ledger as csv string.
 
         This function can filter for Transactions.
@@ -144,9 +91,10 @@ class Ledger:
             The leddger's content's as a CSV string.
         """
         h = ['date,src,dest,amount,tags,notes']
-        return '\n'.join(h + [str(t) for t in self.getTransactions(func)])
+        body = [str(t) for t in self.getTransactions(filter)]
+        return '\n'.join(h + body)
 
-    def getTransactions(self, func=lambda x: True):
+    def getTransactions(self, filter=lambda x: True):
         """ Retrieve a list of filtered transactions.
 
         Args:
@@ -156,20 +104,22 @@ class Ledger:
         Returns:
             List of internal transaction references.
         """
-        return [t for t in self.transactions if func(t)]
+        if type(filter) is str:
+            return [t for t in self.transactions if eval(filter)]
+        elif callable(filter):
+            return [t for t in self.transactions if filter(t)]
 
-    def filtered(self, func=lambda x: True):
+    def filtered(self, filter=lambda x: True):
         """ Return a ledger consisting only of filtered transactions.
 
         Args:
-            func: Function that returns True or False when provided
-                with a Transaction.
+            func: Expression to be evaluated per each transaction.
 
         Returns:
             A ledger loaded only with transactions that
         """
         subledger = Ledger(self.primary_currency)
-        subledger.load(self.dump(func))
+        subledger.load(self.dump(filter))
         return subledger
 
     def reportDupes(self, transactions):
@@ -268,7 +218,7 @@ class Ledger:
         line_num = 2
         for row in reader:
             try:
-                date = dateutil.parser.parse(row['date'])
+                date = SuperDate(row['date'])
 
                 notes = ''
                 if 'notes' in row:

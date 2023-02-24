@@ -37,7 +37,6 @@ These options must be specified after the subcommand.
         Display a help message and exit.
 
 .. include:: _daybook-csv-opts.rst
-.. include:: _daybook-server-opts.rst
 .. include:: _daybook-filter-opts.rst
 
 Writing your own reporter module
@@ -73,12 +72,16 @@ Lines from CSVs read into the ledger are stored as Transaction references.
 Each transaction has a date, src account, dest account, Amount reference,
 tags, and notes. Money flows from source account to destination account.
 
-- self.date: datetime when the transaction took place.
-- self.src: Reference to the source Account.
-- self.dest: Reference to the destination Account
-- self.amount: Amount reference.
-- self.tags: Set of tags for the transaction.
-- self.notes: Notes for the transaction stored as a str.
+- t.date: date or datetime when the transaction took place.
+- t.src: Reference to the source Account.
+- t.dest: Reference to the destination Account
+- t.amount: Amount reference.
+- t.tags: Set of tags for the transaction.
+- t.notes: Notes for the transaction stored as a str.
+
+These ease common filters
+- t.accounts: Names of both accounts as a string.
+- t.quantity: Higher absolute value of units of currency exchanged in amount.
 
 Amount
 ~~~~~~
