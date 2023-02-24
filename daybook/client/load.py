@@ -112,7 +112,8 @@ def load_from_local(csvs, primary_currency, duplicate_window, hints=None):
 def load_from_args(args):
     """ Choose from where to load based on args.
 
-    Loading order is Commandline CSVs and then ledger_root.
+    Currently just loads from CSVs but if we add a server or support for
+    stdin then maybe we want to load from there.
 
     Args:
         args: daybook args namespace
@@ -136,17 +137,7 @@ def load_from_args(args):
             args.duplicate_window,
             hints).filtered(args.filter)
 
-    elif args.ledger_root:
-        print(f'INFO: No CSVs specified. Loading from {args.ledger_root}.')
-        ledger = load_from_local(
-            [args.ledger_root],
-            args.primary_currency,
-            args.duplicate_window,
-            hints).filtered(args.filter)
-
     else:
-        raise ValueError(
-            'No CSVs or default ledger_root specified. '
-            'Cannot load a ledger.')
+        raise ValueError('No CSVs specified.')
 
     return ledger
