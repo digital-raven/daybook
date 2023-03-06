@@ -2,7 +2,8 @@ import os
 from argparse import RawDescriptionHelpFormatter
 from pathlib import Path
 
-from daybook.client.cli.convert.main import import_converters
+from daybook.client.cli.convert.main import convert_filter
+from daybook.util.importer import import_modules
 
 
 presets_base = f'{Path.home()}/.local/usr/share/daybook/presets'
@@ -16,11 +17,12 @@ def add_converter_subparsers(subparsers):
 
     paths = os.environ['DAYBOOK_CONVERTERS'].split(':')
 
-    converters = import_converters(paths)
+    keys = ['help', 'description']
+    converters = import_modules(paths, convert_filter, keys)
     converters = {k: converters[k] for k in sorted(converters)}
 
     for name, tupe in converters.items():
-        help, description, _, _, _ = tupe
+        help, description = tupe
         description = '\n'.join([help, '', description])
         sp = subparsers.add_parser(
             name, help=help, description=description,
