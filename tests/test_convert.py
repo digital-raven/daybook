@@ -1,9 +1,8 @@
 import os
 import unittest
 
-from daybook.client.cli.convert.main import (
-    convert_csv, convert_csvs, import_converter)
-from daybook.util.importer import import_single_py
+from daybook.client.cli.convert.main import convert_csv, convert_csvs, convert_filter
+from daybook.util.importer import import_single_py, import_module
 
 
 resources = f'{os.path.dirname(__file__)}/resources/convert'
@@ -28,7 +27,10 @@ class TestConvert(unittest.TestCase):
     def test_import_converter(self):
         """ The same as import_single_py but check for 2 fields.
         """
-        _, _, headings, convert_row, _ = import_converter(f'{resources}/good_convert.py')
+        headings, convert_row = import_module(
+            f'{resources}/good_convert.py',
+            keys=['headings', 'convert_row'])
+
         self.assertEqual('headings', headings)
         self.assertEqual('some string', convert_row(None))
 
@@ -36,25 +38,25 @@ class TestConvert(unittest.TestCase):
         """ Should raise OSError if pyfile doesn't exist.
         """
         with self.assertRaises(OSError):
-            _, _, _, _, _ = import_converter(f'{resources}/doesnt_exist.py')
+            import_module(f'{resources}/doesnt_exist.py', convert_filter)
 
     def test_import_converter_bad_headings(self):
         """ headings needs to be a str.
         """
         with self.assertRaises(TypeError):
-            _, _, _, _, _ = import_converter(f'{resources}/bad_convert_headings.py')
+            import_module(f'{resources}/bad_convert_headings.py', convert_filter)
 
     def test_import_converter_missing_headings(self):
-        """ convert_row should be present.
+        """ headings should be present.
         """
         with self.assertRaises(KeyError):
-            _, _, _, _, _ = import_converter(f'{resources}/bad_convert_missing_headings.py')
+            import_module(f'{resources}/bad_convert_missing_headings.py', convert_filter)
 
     def test_import_converter_missing_convert_row(self):
         """ convert_row should be present.
         """
         with self.assertRaises(KeyError):
-            _, _, _, _, _ = import_converter(f'{resources}/bad_convert_missing_convert_row.py')
+            import_module(f'{resources}/bad_convert_missing_convert_row.py', convert_filter)
 
     def test_convert_csv(self):
         """ A CSV should be converted based on headings and convert_row.

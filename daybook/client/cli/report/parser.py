@@ -3,7 +3,8 @@ from argparse import RawDescriptionHelpFormatter
 from pathlib import Path
 
 from daybook.client.parsergroups import create_csv_opts, create_filter_opts
-from daybook.client.cli.report.main import import_reporters
+from daybook.client.cli.report.main import report_filter
+from daybook.util.importer import import_modules
 
 
 presets_base = f'{Path.home()}/.local/usr/share/daybook/presets'
@@ -17,11 +18,12 @@ def add_reporter_subparsers(subparsers, parents):
 
     paths = os.environ['DAYBOOK_REPORTERS'].split(':')
 
-    reporters = import_reporters(paths)
+    keys = ['help', 'description']
+    reporters = import_modules(paths, report_filter, keys)
     reporters = {k: reporters[k] for k in sorted(reporters)}
 
     for name, tupe in reporters.items():
-        help, description, _, _ = tupe
+        help, description = tupe
         description = '\n'.join([help, '', description])
         sp = subparsers.add_parser(
             name, help=help, description=description,
