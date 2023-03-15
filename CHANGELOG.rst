@@ -6,18 +6,24 @@ All notable changes to daybook will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
-[unreleased]
-============
+[2.0.0-alpha] - 2023-03-15
+==========================
+Big changes. Daybookd is gone and the major subcommands are now refactored
+as presets available to the new ``report`` subcommand.
 
 Added
 -----
-- New "convert" subcommand.
-- "budget" subcommand.
-- "report" subcommand.
+- New "convert" subcommand and some very alpha presets to convert bank csvs
+  into daybook's format.
+- ``report" subcommand.
 - ``--version`` option to print version of daybook and logic to pull version
   from git tags.
 - The user-specific daybook.ini is now created with comments.
 - Documented installation locations of manpages and tab-autocomplete script.
+
+Changed
+-------
+- ``balance`` and ``expense`` subcommands are now ``report`` presets.
 
 Fixed
 -----
@@ -26,6 +32,13 @@ Fixed
 Removed
 -------
 - Debian packaging support. Just use pip.
+- Removed the ``add`` subcommand. Unnatural when compared to simply
+  importing transactions via csv. Kept on another branch to potentially
+  revisit in the future.
+- Removed daybookd. Needless and added complexity. Kept alive on another
+  branch to potentially revisit in the future.
+- Removed ``load`` and ``clear`` subcommands since they were only
+  relevent to daybookd.
 
 [1.1.0-alpha] - 2021-04-07
 ==========================
