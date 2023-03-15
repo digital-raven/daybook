@@ -1,5 +1,4 @@
 import os
-import subprocess as sp
 from setuptools import setup, find_packages
 from os import path
 
@@ -35,15 +34,13 @@ if 'DEBBUILD' not in os.environ:
         'superdate',
     ]
 
-version=sp.check_output(['git','describe','--tags'], text=True).strip()
-
 setup(
     name='daybook',
-    version=version,
+    version='1.1.0-alpha',
     description='A command line ledger.',
     long_description=long_description,
-    long_description_content_type='text/markdown',
-    url='',
+    long_description_content_type='text/x-rst',
+    url='https://github.com/digital-raven/daybook',
     author='Raven',
     author_email='raven@rubicon.aleeas.com',
     packages=find_packages(exclude=['tests']),
