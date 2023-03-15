@@ -36,7 +36,7 @@ if 'DEBBUILD' not in os.environ:
 
 setup(
     name='daybook',
-    version='1.1.0-alpha',
+    version='2.0.0-alpha',
     description='A command line ledger.',
     long_description=long_description,
     long_description_content_type='text/x-rst',
