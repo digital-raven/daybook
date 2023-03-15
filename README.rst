@@ -20,9 +20,8 @@ this operating system.
 
 Maintenance
 ===========
-Update the CHANGELOG when cutting a new release, then create and push a git tag
-named after the new version. This project's packaging script and setup.py will
-automatically determine the version based on git-describe.
+Update the CHANGELOG and version in setup.py when cutting a new release.
+Build it with ``make`` and push to PyPi with ``make release``
 
 Building and installation
 =========================
@@ -30,9 +29,8 @@ Clone this repo, checkout a release tag, and run these commands.
 
 ::
 
-    ./package.bash python3
+    make
     pip3 install --user .
-    ./package.bash clean
 
 Manpages will be installed to ``$HOME/.local/usr/share/man`` and the completion
 script will be installed under ``$HOME/.local/etc/bash_completion.d``. Update your
@@ -46,7 +44,6 @@ Run these commands to install daybook to a virtual environment.
 
     python3 -m venv ./venv
     . ./venv/bin/activate
-    python3 ./setup.py
     pip3 install -e .
     daybook
 

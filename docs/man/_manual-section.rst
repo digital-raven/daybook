@@ -1,3 +1,3 @@
-:Author: Bo Cimino
-:Copyright: Copyright 2019-2021 Bo Cimino
+:Author: Logan Reece
+:Copyright: Copyright 2019-2023 Logan Reece
 :Manual section: 1
