@@ -47,18 +47,20 @@ Let's say your bank exported an example CSV in the following format.
     Date, Amount, Description, Category
     10/01/2022,14.56,LOCAL GROCERY STORE,food
 
-This aren't headings that are compatible with daybook. Let's convert them.
+This CSV is not compatible with daybook, so we'll convert it.
 
-Create a converter script that follows this convention
+Create a Python3 script that follows this convention. Lets name it
+``convert.py`` for this example.
 
 ::
 
-    # converter.py, but this file can be named whatever you want.
+    # Each converter module must have a help, description, headings,
+    # and a convert_row function
 
-    # (optional) Short description
+    # Short description
     help = 'Converter for Mybanks CSVs'
 
-    # (optional) Longer, potentially multi-line description.
+    # Longer, potentially multi-line description.
     description = '''
     Mybank has upcased date and amount fields, and uses a Description heading
     to describe the vendor. This module fixes that.
@@ -79,7 +81,7 @@ Create a converter script that follows this convention
 
         return f'{date},{dest},{notes},{amount}'
 
-To convert this csv we would run ``daybook convert --csvs transactions.csv --converter converter.py``
+To convert this csv we would run ``daybook convert --csvs transactions.csv --converter ./converter.py``
 and our output would be...
 
 ::
@@ -92,7 +94,7 @@ output to a file.
 
 ::
 
-    daybook convert --csvs transactions.csv --converter converter.py > asset.checking.csv
+    daybook convert --csvs transactions.csv --converter ./converter.py > asset.checking.csv
 
 And asset.checking.csv will contain the rows in daybook's format.
 
@@ -100,10 +102,6 @@ While this example is trivial, financial instituions like Schwab and Fidelity
 will often do odd things with their CSV exports. Being able to format these rows
 using arbitraty python3 scripting is very useful, and allows the scripts to be
 reused month after month.
-
-The converter.py modules are stock python3. The only rules it needs to follow are
-the presence of a headings string and a convert_row function that accepts one
-dict argument and returns a string.
 
 SEE ALSO
 ========

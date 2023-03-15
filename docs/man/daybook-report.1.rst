@@ -121,9 +121,11 @@ will be considered the budget. Here's an example in a markdown file.
 
 EXAMPLES
 ========
-Here are some simple example report functions, but remember that the report
-function is stock python3. Anything you can do in python3 you can do here. Your
-reports may be as simple, or complex, as you wish.
+Here is a simple report example, but remember that the report function is
+stock python3. Anything you can do in python3 you can do here. Your reports
+may be as simple, or complex, as you wish. The only hard and fast rules are
+the presence of ``help`` and ``description`` strings and a ``report`` function
+that accepts a ledger and budget reference.
 
 ::
 
