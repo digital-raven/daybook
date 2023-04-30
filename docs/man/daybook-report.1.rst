@@ -79,9 +79,10 @@ tags, and notes. Money flows from source account to destination account.
 - t.tags: Set of tags for the transaction.
 - t.notes: Notes for the transaction stored as a str.
 
-These ease common filters
+These fields serve to ease common filters.
+
 - t.accounts: Names of both accounts as a string.
-- t.quantity: Higher absolute value of units of currency exchanged in amount.
+- t.quantity: Higher absolute value of currency exchanged in t.amount
 
 Amount
 ~~~~~~

@@ -29,7 +29,7 @@ class Transaction:
 
         # Makes filtering in ledger easier
         # eg. 'expense' in t.accounts way better than any(['expense' in x for x in ...
-        self.account = f'{src.name} {dest.name}'
+        self.accounts = f'{src.name} {dest.name}'
         self.quantity = max(abs(self.amount.src_amount), abs(self.amount.dest_amount))
 
         # this key information shouln't ever be modified.
