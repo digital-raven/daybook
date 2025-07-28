@@ -14,10 +14,10 @@ class Transaction:
 
     def __init__(self, date, src, dest, amount, tags=None, notes=''):
 
-        if not type(src) == Account or not type(dest) == Account:
+        if type(src) is not Account or type(dest) is not Account:
             raise ValueError('src and dest need to be of type Account.')
 
-        if not type(amount) == Amount:
+        if type(amount) is not Amount:
             raise ValueError('amount must be of type Amount')
 
         self.date = SuperDate(date)
