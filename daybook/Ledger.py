@@ -206,7 +206,7 @@ class Ledger:
         perspective = thisname
         thisname = thisname or 'void.void'
 
-        if type(lines) == str:
+        if type(lines) is str:
             lines = io.StringIO(lines)
 
         newtrans = []
