@@ -6,6 +6,17 @@ All notable changes to daybook will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
+[unreleased]
+============
+
+Added
+-----
+- Docker container and helper script which installs and runs daybook.
+- The container sets up a compatible environment for daybook which configures
+  the environment variables and .bashrc for man pages and auto-completion.
+- The script lanches the container in an interactive environment and automatically
+  installs daybook.
+
 [2.0.0-alpha] - 2023-03-15
 ==========================
 Big changes. Daybookd is gone and the major subcommands are now refactored
